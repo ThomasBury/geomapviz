@@ -15,13 +15,11 @@ import seaborn as sns
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from palettable.cartocolors.qualitative import Bold_10
-from palettable.cmocean.sequential import Thermal_20
 import cmasher as cmr
 import cartopy.crs as ccrs
 import holoviews as hv
 import geoviews as gv
 from holoviews import opts
-import importlib
 
 # numpy
 import numpy as np

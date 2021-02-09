@@ -4,7 +4,7 @@ import pandas as pd
 import geopandas as gpd
 import matplotlib
 import holoviews
-from src.geomapviz import prepare_geo_data, single_predictor_aggr_multi_mod, \
+from geomapviz.geomapviz import prepare_geo_data, single_predictor_aggr_multi_mod, \
     plot_on_map, facet_map, facet_map_interactive
 
 
