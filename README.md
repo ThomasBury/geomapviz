@@ -89,7 +89,7 @@ f = gm.plot_on_map(df=bel_df, target='truth', dissolve_on=None, distrib='gaussia
 
 <table >
   <tr>
-    <td align="left"><img src="pics/be-rnd02.png" width="300"/></td>
+    <td align="left"><img src="pics/be-rnd02.png" width="600"/></td>
   </tr>
 </table>
 
@@ -126,7 +126,7 @@ f
 
 <table >
   <tr>
-    <td align="left"><img src="pics/be-rnd05.png" width="600"/></td>
+    <td align="left"><img src="pics/be-rnd05.png" width="300"/></td>
   </tr>
 </table>
 
