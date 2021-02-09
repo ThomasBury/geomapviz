@@ -30,7 +30,7 @@ INSTALL_REQUIRES = ['pandas >= 1.0.0',
 KEYWORDS = 'geographical, visualization, map, interactive, choropleth'
 
 setup(name="geomapviz",
-      version="0.1",
+      version="0.2",
       description="Geographical visualization",
       long_description=README,
       long_description_content_type="text/markdown",
