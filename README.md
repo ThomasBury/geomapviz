@@ -34,6 +34,9 @@ import geopandas as gpd
 shp_path = "belgium.shp"
 geom_df = gpd.read_file(shp_path)
 
+# create correlation with the geo entities
+feat_1 = np.repeat(np.log10(geom_df.INS.astype(int).values), 10)
+feat_1 = (feat_1 - feat_1.min()) / (feat_1.max() - feat_1.min())
 # dummy data
 bel_df = pd.DataFrame({
     'geoid': np.repeat(geom_df.INS.values, 10),
@@ -56,7 +59,7 @@ f = gm.plot_on_map(df=bel_df, target='truth', dissolve_on=None, distrib='gaussia
 
 <table >
   <tr>
-    <td align="left"><img src="pics/be-rnd00.png" width="600"/></td>
+    <td align="left"><img src="pics/be-rnd00.png" width="300"/></td>
   </tr>
 </table>
 
@@ -86,7 +89,7 @@ f = gm.plot_on_map(df=bel_df, target='truth', dissolve_on=None, distrib='gaussia
 
 <table >
   <tr>
-    <td align="left"><img src="pics/be-rnd02.png" width="600"/></td>
+    <td align="left"><img src="pics/be-rnd02.png" width="300"/></td>
   </tr>
 </table>
 
@@ -124,6 +127,24 @@ f
 <table >
   <tr>
     <td align="left"><img src="pics/be-rnd05.png" width="600"/></td>
+  </tr>
+</table>
+
+## Interactive panel
+
+By passing column names , you will have an interactive panel chart with linked maps. You can change the
+source of the tiles if you want to, using the `tiles_src` argument.
+
+```python
+cols_pred = ['feat_2', 'feat_3', 'feat_4']
+f = gm.facet_map_interactive(df=bel_df, target='truth', cols_to_plot=cols_pred, predicted=None, dissolve_on=None,
+                             autobin=True, n_bins=7, geoid='INS', weight=None, shp_path=shp_path,
+                             figsize=(400, 400), ncols=2, cmap=None, normalize=False) #, tiles_src='Wikipedia')
+f
+```
+<table >
+  <tr>
+    <td align="left"><img src="pics/be-rnd06.png" width="600"/></td>
   </tr>
 </table>
 

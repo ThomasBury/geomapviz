@@ -34,7 +34,7 @@ sns.set(style="ticks")
 def single_predictor_aggr_multi_mod(df, feature, target, weight, predicted, distrib='gaussian', ci=True, autobin=False,
                                     n_vals=50, n_bins=20, names=None, verbose=False):
     """
-    Data aggregator to compute the uni-variate target (e.g. claim frequency or severity) for multiple models.
+    Data aggregator to compute the uni-variate target for multiple models.
     Group by [feature] and sum [weight, target, predicted[model_i]].
     The aggregated target is then obtained by dividing the sum(target)/sum(weight) or sum(predicted)/sum(weight).
     If you don't want a weighted average, set weight as None, it'll pass a vector of ones as weight.
@@ -45,9 +45,6 @@ def single_predictor_aggr_multi_mod(df, feature, target, weight, predicted, dist
 
     Intended to compute the uni-variate claim freq or sev, the confidence intervals are derived at the same time, using
     the assumption that the ncl is Poisson and sev is Gamma distributed. You can disable the computation.
-
-    The process is slightly different from ``single_predictor_aggr`` but might be merged in the future
-
 
 
     :param df: dataframe
@@ -486,7 +483,7 @@ def plot_on_map(df, target, dissolve_on=None, distrib='gaussian', plot_uncertain
             ax.set_axis_off()
 
     # Display the figure
-    plt.show()
+    # plt.show()
     return f
 
 
@@ -635,7 +632,7 @@ def facet_map(df, cols_to_plot, target, predicted=None, dissolve_on=None,
             ax.set_axis_off()
 
     # Display the figure
-    plt.show()
+    # plt.show()
     return f
 
 
