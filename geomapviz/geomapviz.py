@@ -28,6 +28,9 @@ hv.extension('bokeh', logo=False)
 hv.renderer('bokeh').theme = 'light_minimal'
 sns.set(style="ticks")
 
+__all__ = ['single_predictor_aggr_multi_mod', 'merge_zip_df', 'prepare_geo_data',
+           'plot_on_map', 'facet_map', 'facet_map_interactive']
+
 
 def single_predictor_aggr_multi_mod(df, feature, target, weight, predicted, distrib='gaussian', ci=True, autobin=False,
                                     n_vals=50, n_bins=20, names=None, verbose=False):
@@ -717,7 +720,7 @@ def facet_map_interactive(df, cols_to_plot, target, predicted=None, dissolve_on=
 
     # define colour_map
     if (cmap is None) and (autobin is False):
-        colour_map = cmr.tropical #Thermal_20.mpl_colormap
+        colour_map = cmr.tropical  # Thermal_20.mpl_colormap
     elif (cmap is None) and (autobin is True):
         # colour_map = getattr(importlib.import_module('palettable.cmocean.sequential'), 'Thermal_' + str(n_bins))
         # colour_map = colour_map.mpl_colormap

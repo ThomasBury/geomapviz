@@ -26,7 +26,7 @@ prefer light over a black background (I don't know if anyone would).
 Introducing correlation to the geo identifier of regions
 
 ```python
-import geomapviz.geomapviz as gm
+import geomapviz as gm
 import geopandas as gpd
 
 # the greatest country in the world,
@@ -151,6 +151,13 @@ f
 
 
 # Changes
+### 0.1
+
+ - Bound functions to the upper level
+
+### 0.2
+
+ - First version
 
 ### 0.1
 
