@@ -46,6 +46,7 @@ bel_df = pd.DataFrame({
     'feat_4': feat_1 + np.random.beta(5, 2, size=len(feat_1))
 }
 )
+bel_df = bel_df.merge(geom_df[['INS', 'borough', 'district']], left_on='geoid', right_on='INS')
 ```
 
 ## Simple choropleth
