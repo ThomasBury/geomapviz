@@ -152,7 +152,7 @@ f
 
 
 # Changes
-### 0.1
+### 0.3
 
  - Bound functions to the upper level
 
