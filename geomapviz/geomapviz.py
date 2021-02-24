@@ -9,11 +9,13 @@ import pandas as pd
 import geopandas as gpd
 from mapclassify import Quantiles
 import warnings
+from os.path import dirname, join
 
 # Plot and graphics
 import seaborn as sns
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from palettable.cartocolors.qualitative import Bold_10
 import cmasher as cmr
 import cartopy.crs as ccrs
@@ -29,7 +31,7 @@ hv.renderer('bokeh').theme = 'light_minimal'
 sns.set(style="ticks")
 
 __all__ = ['single_predictor_aggr_multi_mod', 'merge_zip_df', 'prepare_geo_data',
-           'plot_on_map', 'facet_map', 'facet_map_interactive']
+           'plot_on_map', 'facet_map', 'facet_map_interactive', 'load_be_shp']
 
 
 def single_predictor_aggr_multi_mod(df, feature, target, weight, predicted, distrib='gaussian', ci=True, autobin=False,
@@ -146,7 +148,6 @@ def single_predictor_aggr_multi_mod(df, feature, target, weight, predicted, dist
 
     else:
         pred_obs_cols = [target]
-        col_y = []
 
     # weighted average is not at the geomid level.
     # In order to compute the average at the geomid level, we need to get back the original values
@@ -164,7 +165,8 @@ def single_predictor_aggr_multi_mod(df, feature, target, weight, predicted, dist
     # summing the target and weight
     df_ = (
         df_.groupby([feature])[pred_obs_cols + [weight, 'count']]
-            .sum().reset_index()
+            .sum()
+            .reset_index()
     )
 
     # get the rate at the geomid level
@@ -248,7 +250,7 @@ def merge_zip_df(zip_path, df, geoid='geoid', cols_to_keep=None):
 
 
 def prepare_geo_data(df, cols_to_plot, target, predicted=None, dissolve_on=None, distrib='gaussian',
-                     n_bins=7, geoid='INS', weight=None, shp_path=None, autobin=False):
+                     n_bins=7, geoid='INS', weight=None, shp_file=None, autobin=False):
     """
     Prepare the geodata to map. Take the dataframe df, which should have a geoid column, and join it to
     the zipcode mapper and the geometries.
@@ -275,20 +277,29 @@ def prepare_geo_data(df, cols_to_plot, target, predicted=None, dissolve_on=None,
         the column name you want to dissolve on. Dissolve means going to an upper geographical level,
         e.g. from commune to district or to state.
         (e.g. moving from counties to states)
+    :param distrib: str, default="gaussian"
+        the kind of distrib "poisson" or "gamma" or other (Gaussian), to compute the confidence
+        intervals accordingly
     :param n_bins: int, default: 7
         number of bin for auto-binning (discretizing the values)
     :param geoid: str, default: 'INS'
         the name of the geoid columns, INS refers to the Belgian french name
     :param weight: None or str
         column (if any) of sample weights
-    :param shp_path: str
-        the path to the shapefile. E.G: "~/Shapefiles/belgium.shp"
+    :param shp_file: geopandas frame
+        the shapefile. E.G: load_be_shp()
     :param autobin: boolean, default=False
         whether or not to bin the data.
 
     :return: geopandas dataframe
     """
     # sanity checks
+
+    if not isinstance(shp_file, gpd.geodataframe.GeoDataFrame):
+        raise TypeError("The shapefile should be a geopandas.geodataframe.GeoDataFrame")
+
+    geom_merc = shp_file.copy()
+
     if cols_to_plot is not None:
         if not isinstance(cols_to_plot, list):
             raise TypeError("'cols_to_plot' should be a list of strings or None")
@@ -299,9 +310,6 @@ def prepare_geo_data(df, cols_to_plot, target, predicted=None, dissolve_on=None,
     # set style, ignore geopandas warnings
     warnings.simplefilter(action="ignore", category=RuntimeWarning)
     set_my_plt_style(height=3, width=3)
-
-    # load the geometries
-    geom_merc = gpd.read_file(shp_path)
 
     # aggregate either by nis or by borough
     if dissolve_on is not None:
@@ -333,8 +341,8 @@ def prepare_geo_data(df, cols_to_plot, target, predicted=None, dissolve_on=None,
 
 
 def plot_on_map(df, target, dissolve_on=None, distrib='gaussian', plot_uncertainty=True, plot_weight=True,
-                autobin=False, n_bins=7, geoid='nis', weight='exp_yr', shp_path=None,
-                figsize=(12, 12), cmap=None, normalize=True, facecolor="black"):
+                autobin=False, n_bins=7, geoid='nis', weight='exp_yr', shp_file=None,
+                figsize=(12, 12), cmap=None, normalize=True, facecolor="black", nbr_of_dec=None):
     """
     Prepare the geodata to map. Take the dataframe df, which should have a geoid column, and join it to
     the zipcode mapper and the geometries. The result is illustrated on a (facet) chart.
@@ -372,8 +380,8 @@ def plot_on_map(df, target, dissolve_on=None, distrib='gaussian', plot_uncertain
         the name of the geoid columns, INS refers to the Belgian french name
     :param weight: None or str
         column (if any) of sample weights
-    :param shp_path: str
-        the path to the shapefile. E.G: "~/Shapefiles/belgium.shp"
+    :param shp_file: geopandas frame
+        the shapefile. E.G: load_be_shp
     :param figsize: 2-uple, default: (12, 12)
         figure size, (width, heihgt)
     :param cmap: matplotlib cmap or None
@@ -384,16 +392,21 @@ def plot_on_map(df, target, dissolve_on=None, distrib='gaussian', plot_uncertain
         the same for all the panels and computed w.r.t the target column
     :param facecolor: str or 3-uple rgb
         the facecolor
+    :param nbr_of_dec: int, default = None
+        the number of decimal in the discrete legend, if autobin is used. If None, either 2 or 4 decimals
 
     :return: object, matplotlib figure
     """
+
+    if not isinstance(shp_file, gpd.geodataframe.GeoDataFrame):
+        raise TypeError("The shapefile should be a geopandas.geodataframe.GeoDataFrame")
 
     title_col = "white" if facecolor == "black" else "black"
     # load the data to illustrate
     geo_df = prepare_geo_data(df=df, cols_to_plot=None, target=target,
                               predicted=None, dissolve_on=dissolve_on,
                               n_bins=n_bins, geoid=geoid, weight=weight,
-                              shp_path=shp_path, distrib=distrib)
+                              shp_file=shp_file, distrib=distrib)
 
     geo_df['2target_std'] = 2 * geo_df['target_std']
 
@@ -452,11 +465,19 @@ def plot_on_map(df, target, dissolve_on=None, distrib='gaussian', plot_uncertain
             else:
                 bins = Quantiles(geo_df[col].fillna(0), n_bins).bins
 
+            if nbr_of_dec is not None:
+                nbr_dec = str(nbr_of_dec)
+            elif (np.abs(bins) < 1).all():
+                nbr_dec = str(4)
+            else:
+                nbr_dec = str(2)
+
             geo_df.plot(column=col, ax=ax, legend=True, linewidth=0,
                         cmap=colour_map, scheme='user_defined', classification_kwds={'bins': bins},
                         legend_kwds={'facecolor': facecolor,
                                      'framealpha': 0,
                                      'loc': 'lower left',
+                                     'fmt': "{:." + nbr_dec + "f}",
                                      'labelcolor': title_col}
                         )
         else:
@@ -467,8 +488,13 @@ def plot_on_map(df, target, dissolve_on=None, distrib='gaussian', plot_uncertain
                 vmax = np.nanpercentile(geo_df[col], 99)
                 vmin = np.nanpercentile(geo_df[col], 1)
 
-            geo_df.plot(column=col, ax=ax, legend=True, linewidth=0, vmin=vmin, vmax=vmax,
-                        cmap=colour_map)
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes("right", size="5%", pad=0.1)
+            cax.tick_params(axis="y", labelsize='large', labelcolor=title_col, grid_linewidth=0)
+            cax.set_frame_on(False)
+            geo_df.plot(column=col, ax=ax, cax=cax, legend=True, linewidth=0, vmin=vmin, vmax=vmax,
+                        cmap=colour_map
+                        )
         # Remove axis clutter
         ax.set_axis_off()
         # Set the axis title to the name of variable being plotted
@@ -489,8 +515,8 @@ def plot_on_map(df, target, dissolve_on=None, distrib='gaussian', plot_uncertain
 
 
 def facet_map(df, cols_to_plot, target, predicted=None, dissolve_on=None,
-              autobin=False, n_bins=7, geoid='nis', weight='exp_yr', shp_path=None,
-              figsize=(12, 12), ncols=2, cmap=None, normalize=True, facecolor="black"):
+              autobin=False, n_bins=7, geoid='nis', weight='exp_yr', shp_file=None,
+              figsize=(12, 12), ncols=2, cmap=None, normalize=True, facecolor="black", nbr_of_dec=None):
     """
     Prepare the geodata to map. Take the dataframe df, which should have a geoid column, and join it to
     the zipcode mapper and the geometries. The result is illustrated on a (facet) chart.
@@ -524,8 +550,8 @@ def facet_map(df, cols_to_plot, target, predicted=None, dissolve_on=None,
         the name of the geoid columns, INS refers to the Belgian french name
     :param weight: None or str
         column (if any) of sample weights
-    :param shp_path: str
-        the path to the shapefile. E.G: "~/Shapefiles/belgium.shp"
+    :param shp_file: geopandas frame
+        the shapefile. E.G: load_be_shp()
     :param figsize: 2-uple, default: (12, 12)
         figure size, (width, heihgt)
     :param ncols: int, default: 2
@@ -538,6 +564,8 @@ def facet_map(df, cols_to_plot, target, predicted=None, dissolve_on=None,
         the same for all the panels and computed w.r.t the target column
     :param facecolor: str or 3-uple rgb
         the facecolor
+    :param nbr_of_dec: int, default = None
+        the number of decimal in the discrete legend, if autobin is used. If None, either 2 or 4 decimals
 
     :return: object, matplotlib figure
     """
@@ -545,12 +573,18 @@ def facet_map(df, cols_to_plot, target, predicted=None, dissolve_on=None,
     if not isinstance(ncols, int):
         raise ValueError("'ncols' should be an integer")
 
+    if not isinstance(shp_file, gpd.geodataframe.GeoDataFrame):
+        raise TypeError("The shapefile should be a geopandas.geodataframe.GeoDataFrame")
+
     title_col = "white" if facecolor == "black" else "black"
+
+    if facecolor == "black":
+        set_my_plt_style(height=3, width=5, linewidth=2, bckgnd_color=facecolor)
 
     # load the data to illustrate
     geo_df = prepare_geo_data(df=df, cols_to_plot=cols_to_plot, target=target,
                               predicted=predicted, dissolve_on=dissolve_on,
-                              n_bins=n_bins, geoid=geoid, weight=weight, shp_path=shp_path)
+                              n_bins=n_bins, geoid=geoid, weight=weight, shp_file=shp_file)
 
     # if more than 1 column to illustrate, fillna and set the number of rows in the panel plot
     if cols_to_plot is not None:
@@ -605,11 +639,19 @@ def facet_map(df, cols_to_plot, target, predicted=None, dissolve_on=None,
             else:
                 bins = Quantiles(geo_df[col].fillna(0), n_bins).bins
 
+            if nbr_of_dec is not None:
+                nbr_dec = str(nbr_of_dec)
+            elif (np.abs(bins) < 1).all():
+                nbr_dec = str(4)
+            else:
+                nbr_dec = str(2)
+
             geo_df.plot(column=col, ax=ax, legend=True, linewidth=0,
                         cmap=colour_map, scheme='user_defined', classification_kwds={'bins': bins},
                         legend_kwds={'facecolor': facecolor,
                                      'framealpha': 0,
                                      'loc': 'lower left',
+                                     'fmt': "{:." + nbr_dec + "f}",
                                      'labelcolor': title_col})
         else:
             if normalize:
@@ -619,8 +661,13 @@ def facet_map(df, cols_to_plot, target, predicted=None, dissolve_on=None,
                 vmax = np.nanpercentile(geo_df[col], 99)
                 vmin = np.nanpercentile(geo_df[col], 1)
 
-            geo_df.plot(column=col, ax=ax, legend=True, linewidth=0, vmin=vmin, vmax=vmax,
-                        cmap=colour_map)
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes("right", size="5%", pad=0.2)
+            cax.tick_params(axis="y", labelsize='large', labelcolor=title_col, colors=title_col, grid_linewidth=0)
+            cax.set_frame_on(False)
+            geo_df.plot(column=col, ax=ax, cax=cax, legend=True, linewidth=0, vmin=vmin, vmax=vmax,
+                        cmap=colour_map
+                        )
         # Remove axis clutter
         ax.set_axis_off()
         # Set the axis title to the name of variable being plotted
@@ -637,8 +684,8 @@ def facet_map(df, cols_to_plot, target, predicted=None, dissolve_on=None,
     return f
 
 
-def facet_map_interactive(df, cols_to_plot, target, predicted=None, dissolve_on=None,
-                          autobin=False, n_bins=7, geoid='nis', weight='exp_yr', shp_path=None,
+def facet_map_interactive(df, cols_to_plot, target, predicted=None, dissolve_on=None, alpha=0.5,
+                          autobin=False, n_bins=7, geoid='nis', weight='exp_yr', shp_file=None,
                           figsize=(12, 12), ncols=2, cmap=None, normalize=True, tiles_src=None):
     """
     Prepare the geodata to map. Take the dataframe df, which should have a geoid column, and join it to
@@ -668,6 +715,8 @@ def facet_map_interactive(df, cols_to_plot, target, predicted=None, dissolve_on=
         the column name you want to dissolve on. Dissolve means going to an upper geographical level,
         e.g. from commune to district or to state.
         (e.g. moving from counties to states)
+    :param alpha: float between 0 and 1, default=0.5
+        the transparency of the choropleth
     :param autobin: Bool, default=False
         autobin (discretized) the illustrated values. If True, the values are binned using percentiles before to be
         plotted
@@ -677,8 +726,8 @@ def facet_map_interactive(df, cols_to_plot, target, predicted=None, dissolve_on=
         the name of the geoid columns, INS refers to the Belgian french name
     :param weight: None or str
         column (if any) of sample weights
-    :param shp_path: str
-        the path to the shapefile. E.G: "~/Shapefiles/belgium.shp"
+    :param shp_file: geopandas frame
+        the shapefile. E.G: load_be_shp()
     :param figsize: 2-uple, default: (12, 12)
         figure size, (width, heihgt)
     :param ncols: int, default: 2
@@ -701,7 +750,7 @@ def facet_map_interactive(df, cols_to_plot, target, predicted=None, dissolve_on=
     # load the data to illustrate
     geo_df = prepare_geo_data(df=df, cols_to_plot=cols_to_plot, target=target,
                               predicted=predicted, dissolve_on=dissolve_on,
-                              n_bins=n_bins, geoid=geoid, weight=weight, shp_path=shp_path,
+                              n_bins=n_bins, geoid=geoid, weight=weight, shp_file=shp_file,
                               autobin=False)
 
     # if more than 1 column to illustrate, fillna and set the number of rows in the panel plot
@@ -733,7 +782,7 @@ def facet_map_interactive(df, cols_to_plot, target, predicted=None, dissolve_on=
     for i, col in enumerate([target] + cols_to_plot):
 
         plot_opts = dict(tools=['hover'], width=550, height=450, color_index=col, cmap=colour_map,
-                         colorbar=True, toolbar='above', xaxis=None, yaxis=None, alpha=.65,
+                         colorbar=True, toolbar='above', xaxis=None, yaxis=None, alpha=alpha,
                          title=col, clipping_colors={'NaN': 'white'})
 
         if autobin:
@@ -786,7 +835,14 @@ def load_geometry(shp_path, geoid='INS'):
     return geom_merc
 
 
-def set_my_plt_style(height=3, width=5, linewidth=2):
+def load_be_shp():
+    module_path = dirname(__file__)
+    base_dir = join(module_path, 'beshp')
+    data_filename = join(base_dir, 'Belgium.shp')
+    return gpd.read_file(data_filename)
+
+
+def set_my_plt_style(height=3, width=5, linewidth=2, bckgnd_color="#f5f5f5"):
     """
     This set the style of matplotlib to fivethirtyeight with some modifications (colours, axes)
 
@@ -796,13 +852,15 @@ def set_my_plt_style(height=3, width=5, linewidth=2):
         fig height in inches (yeah they're still struggling with the metric system)
     :param width: float, default=5
         fig width in inches (yeah they're still struggling with the metric system)
+    :param bckgnd_color: str, default="#f5f5f5"
+        the background color
+
     :return: Nothing
     """
     plt.style.use('fivethirtyeight')
     my_colors_list = Bold_10.hex_colors
     myorder = [2, 3, 4, 1, 0, 6, 5, 8, 9, 7]
     my_colors_list = [my_colors_list[i] for i in myorder]
-    bckgnd_color = "#f5f5f5"
     params = {'figure.figsize': (width, height), "axes.prop_cycle": plt.cycler(color=my_colors_list),
               "axes.facecolor": bckgnd_color, "patch.edgecolor": bckgnd_color, "figure.facecolor": bckgnd_color,
               "axes.edgecolor": bckgnd_color, "savefig.edgecolor": bckgnd_color,

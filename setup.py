@@ -16,7 +16,7 @@ EXTRAS_REQUIRE = {
 
 INSTALL_REQUIRES = ['pandas >= 1.0.0',
                     'numpy >= 1.18.0',
-                    'geopandas >= 0.6.0',
+                    'geopandas >= 0.8.0',
                     'mapclassify >= 2.4.0',
                     'holoviews >= 1.14.0',
                     'geoviews >= 1.8.1',
@@ -30,7 +30,7 @@ INSTALL_REQUIRES = ['pandas >= 1.0.0',
 KEYWORDS = 'geographical, visualization, map, interactive, choropleth'
 
 setup(name="geomapviz",
-      version="0.3",
+      version="0.4",
       description="Geographical visualization",
       long_description=README,
       long_description_content_type="text/markdown",
