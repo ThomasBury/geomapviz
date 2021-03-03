@@ -1,6 +1,7 @@
 <img src="pics/logo.png" alt="drawing" width="200"/>
 
 [buy me caffeine](https://ko-fi.com/V7V72SOHX)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 # Geographical Visualization
 
