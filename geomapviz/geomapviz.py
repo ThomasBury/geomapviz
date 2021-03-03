@@ -159,8 +159,10 @@ def single_predictor_aggr_multi_mod(
         # setting the names
         if isinstance(predicted, pd.DataFrame):
             if names:
-                error_message = "names should be a list (of strings) the same " \
-                                "length of the predicted dataFrame"
+                error_message = (
+                    "names should be a list (of strings) the same "
+                    "length of the predicted dataFrame"
+                )
                 assert len(names) == len(predicted.columns), error_message
                 predicted.columns = names
             else:
@@ -224,7 +226,7 @@ def single_predictor_aggr_multi_mod(
     else:
         print(
             'distrib is not in ["freq", "sev"], using Gaussian '
-            'approx. for the conf. int.'
+            "approx. for the conf. int."
         )
         df_["target_std"] = df_[target] * np.sqrt(1 / df_["count"])
 
@@ -248,7 +250,7 @@ def single_predictor_aggr_multi_mod(
         else:
             print(
                 'distrib is not in ["freq", "sev"], using Gaussian '
-                'approx. for the conf. int.'
+                "approx. for the conf. int."
             )
             df_average["target_std"] = df_average["target"] * np.sqrt(
                 1 / df_average["count"]
@@ -376,8 +378,9 @@ def prepare_geo_data(
     # sanity checks
 
     if not isinstance(shp_file, gpd.geodataframe.GeoDataFrame):
-        raise TypeError("The shapefile should be a "
-                        "geopandas.geodataframe.GeoDataFrame")
+        raise TypeError(
+            "The shapefile should be a " "geopandas.geodataframe.GeoDataFrame"
+        )
 
     geom_merc = shp_file.copy()
 
