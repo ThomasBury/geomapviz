@@ -16,7 +16,17 @@ jobs:
         run: |
           pip install pytest
           pip install pytest-cov
-          pip install numpy pandas matplotlib holoviews
+          pip install numpy
+          pip install pandas
+          pip install matplotlib
+          pip install holoviews
+          pip install palettable
+          pip install geopandas
+          pip install mapclassify
+          pip install seaborn
+          pip install cmasher
+          pip install cartopy
+          pip install geoviews
           pytest --cov=./ --cov-report=xml
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
