@@ -4,17 +4,22 @@ on: [push, pull_request]
 
 jobs:
   run:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up python
         uses: actions/setup-python@v2
+      - name: Lint
+        uses: psf/black@stable
       - name: Generate coverage report
         run: |
+          brew install proj geos
+          pip install Cython
+          pip install pyshp six
+          pip install six
           pip install pytest
           pip install pytest-cov
-          pip install Cython
           pip install numpy
           pip install pandas
           pip install matplotlib
@@ -24,7 +29,7 @@ jobs:
           pip install mapclassify
           pip install seaborn
           pip install cmasher
-          pip install cartopy>=0.17.0
+          pip install cartopy
           pip install geoviews
           pytest --cov=./ --cov-report=xml
       - name: Upload coverage to Codecov
