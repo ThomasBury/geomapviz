@@ -26,7 +26,7 @@ jobs:
           conda install geopandas
           conda install mapclassify
           conda install seaborn
-          conda install cmasher
+          pip install cmasher
           conda install geoviews
           pytest --cov=./ --cov-report=xml
       - name: Upload coverage to Codecov
