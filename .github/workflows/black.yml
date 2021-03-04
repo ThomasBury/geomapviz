@@ -14,7 +14,7 @@ jobs:
         uses: psf/black@stable
       - name: Generate coverage report
         run: |
-          brew install proj geos
+          conda install -c conda-forge cartopy
           pip install Cython
           pip install pyshp six
           pip install six
@@ -29,7 +29,6 @@ jobs:
           pip install mapclassify
           pip install seaborn
           pip install cmasher
-          pip install cartopy
           pip install geoviews
           pytest --cov=./ --cov-report=xml
       - name: Upload coverage to Codecov
