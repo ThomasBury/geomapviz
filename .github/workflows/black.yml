@@ -10,8 +10,6 @@ jobs:
         uses: actions/checkout@v2
       - name: Set up python
         uses: actions/setup-python@v2
-      - name: Lint
-        uses: psf/black@stable
       - name: Generate coverage report
         run: |
           pip install pytest
