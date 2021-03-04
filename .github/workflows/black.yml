@@ -4,12 +4,14 @@ on: [push, pull_request]
 
 jobs:
   run:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up python
         uses: actions/setup-python@v2
+      - name: Lint
+        uses: psf/black@stable
       - name: Generate coverage report
         run: |
           conda install -c conda-forge cartopy
