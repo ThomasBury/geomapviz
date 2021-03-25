@@ -22,6 +22,9 @@ prefer light over a black background (I don't know if anyone would).
 
 `$ pip install geomapviz -U`
 
+ - If you face a `cartopy` installation error, try to install first from pre-built binaries `conda install -c conda-forge cartopy`. For installing on Linux platform, some dependencies are required, see [the cartopy documentation](https://scitools.org.uk/cartopy/docs/latest/installing.html) for details.
+ - If you face a geoviews installation error, try `conda install -c pyviz geoviews`
+
 # Applications
 
 ## Generate dummy data
