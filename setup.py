@@ -28,7 +28,7 @@ KEYWORDS = "geographical, visualization, map, interactive, choropleth"
 
 setup(
     name="geomapviz",
-    version="0.4",
+    version="0.5",
     description="Geographical visualization",
     long_description=README,
     long_description_content_type="text/markdown",

@@ -130,7 +130,7 @@ def single_predictor_aggr_multi_mod(
         if verbose:
             print(
                 "Weight not provided, using the Gaussian approx for the "
-                "CI (instead of the Poisson or Gamma CI)"
+                "CI"
             )
     else:
         df_ = df[[feature, target, weight]].copy()
@@ -224,10 +224,6 @@ def single_predictor_aggr_multi_mod(
     elif distrib == "gamma":
         df_["target_std"] = df_[target] * np.sqrt(1 / df_[weight])
     else:
-        print(
-            'distrib is not in ["freq", "sev"], using Gaussian '
-            "approx. for the conf. int."
-        )
         df_["target_std"] = df_[target] * np.sqrt(1 / df_["count"])
 
     df_average = pd.melt(
@@ -240,18 +236,17 @@ def single_predictor_aggr_multi_mod(
     # Compute the confidence intervals
     if ci:
         if distrib == "poisson":
+            print("Poisson CI")
             df_average["target_std"] = np.sqrt(
                 df_average["target"] / df_average[weight]
             )
         elif distrib == "gamma":
+            print("Gamma CI")
             df_average["target_std"] = df_average["target"] * np.sqrt(
                 1 / df_average[weight]
             )
         else:
-            print(
-                'distrib is not in ["freq", "sev"], using Gaussian '
-                "approx. for the conf. int."
-            )
+            print("Gaussian CI")
             df_average["target_std"] = df_average["target"] * np.sqrt(
                 1 / df_average["count"]
             )
@@ -455,12 +450,12 @@ def plot_on_map(
     target,
     dissolve_on=None,
     distrib="gaussian",
-    plot_uncertainty=True,
-    plot_weight=True,
+    plot_uncertainty=False,
+    plot_weight=False,
     autobin=False,
     n_bins=7,
     geoid="nis",
-    weight="exp_yr",
+    weight=None,
     shp_file=None,
     figsize=(12, 12),
     cmap=None,
@@ -687,7 +682,7 @@ def facet_map(
     autobin=False,
     n_bins=7,
     geoid="nis",
-    weight="exp_yr",
+    weight=None,
     shp_file=None,
     figsize=(12, 12),
     ncols=2,
@@ -1137,7 +1132,7 @@ def load_be_shp():
     """
     module_path = dirname(__file__)
     base_dir = join(module_path, "beshp")
-    data_filename = join(base_dir, "Belgium.shp")
+    data_filename = join(base_dir, "belgium.shp")
     return gpd.read_file(data_filename)
 
 

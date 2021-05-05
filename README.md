@@ -163,6 +163,11 @@ f
 
 # Changes
 
+### 0.5
+
+ - [Bug] Capital letter in importing the BE shapefile
+ - [Bug] Changed default values of arguments
+
 ### 0.4
 
  - Make Belgian shp available using load_be_shp
