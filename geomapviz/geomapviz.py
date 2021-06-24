@@ -6,7 +6,7 @@ from __future__ import print_function
 from os.path import dirname, join
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from palettable.cartocolors.qualitative import Bold_10
-
+from pkg_resources import resource_stream
 # pandas
 import pandas as pd
 import geopandas as gpd
@@ -632,11 +632,11 @@ def plot_on_map(
             )
         else:
             if normalize:
-                vmax = np.nanpercentile(geo_df[target], 99)
-                vmin = np.nanpercentile(geo_df[target], 1)
+                vmax = np.nanpercentile(geo_df[target].fillna(0), 99)
+                vmin = np.nanpercentile(geo_df[target].fillna(0), 1)
             else:
-                vmax = np.nanpercentile(geo_df[col], 99)
-                vmin = np.nanpercentile(geo_df[col], 1)
+                vmax = np.nanpercentile(geo_df[col].fillna(0), 99)
+                vmin = np.nanpercentile(geo_df[col].fillna(0), 1)
 
             divider = make_axes_locatable(ax)
             cax = divider.append_axes("right", size="5%", pad=0.1)
@@ -860,11 +860,11 @@ def facet_map(
             )
         else:
             if normalize:
-                vmax = np.nanpercentile(geo_df[target], 99)
-                vmin = np.nanpercentile(geo_df[target], 1)
+                vmax = np.nanpercentile(geo_df[target].fillna(0), 99)
+                vmin = np.nanpercentile(geo_df[target].fillna(0), 1)
             else:
-                vmax = np.nanpercentile(geo_df[col], 99)
-                vmin = np.nanpercentile(geo_df[col], 1)
+                vmax = np.nanpercentile(geo_df[col].fillna(0), 99)
+                vmin = np.nanpercentile(geo_df[col].fillna(0), 1)
 
             divider = make_axes_locatable(ax)
             cax = divider.append_axes("right", size="5%", pad=0.2)
@@ -1053,11 +1053,11 @@ def facet_map_interactive(
         if autobin:
             if normalize:
                 ser, bins = pd.qcut(
-                    geo_df[target], q=n_bins, retbins=True, labels=None, precision=2
+                    geo_df[target].fillna(0), q=n_bins, retbins=True, labels=None, precision=2
                 )
                 geo_df[col] = (
                     pd.cut(
-                        geo_df[col],
+                        geo_df[col].fillna(0),
                         bins=bins,
                         labels=np.unique(ser),
                         include_lowest=True,
@@ -1083,11 +1083,11 @@ def facet_map_interactive(
             )
         else:
             if normalize:
-                vmax = np.nanpercentile(geo_df[target], 99)
-                vmin = np.nanpercentile(geo_df[target], 1)
+                vmax = np.nanpercentile(geo_df[target].fillna(0), 99)
+                vmin = np.nanpercentile(geo_df[target].fillna(0), 1)
             else:
-                vmax = np.nanpercentile(geo_df[col], 99)
-                vmin = np.nanpercentile(geo_df[col], 1)
+                vmax = np.nanpercentile(geo_df[col].fillna(0), 99)
+                vmin = np.nanpercentile(geo_df[col].fillna(0), 1)
 
             hv_plot_list.append(
                 tiles
@@ -1130,10 +1130,11 @@ def load_be_shp():
 
     :return: geopandas dataframe
     """
-    module_path = dirname(__file__)
-    base_dir = join(module_path, "beshp")
-    data_filename = join(base_dir, "belgium.shp")
-    return gpd.read_file(data_filename)
+    # module_path = dirname(__file__)
+    # base_dir = join(module_path, "beshp")
+    # data_filename = join(base_dir, "belgium.shp")
+    stream = resource_stream(__name__, 'beshp/belgium.shp')
+    return gpd.read_file(stream)
 
 
 def set_my_plt_style(height=3, width=5, linewidth=2, bckgnd_color="#f5f5f5"):

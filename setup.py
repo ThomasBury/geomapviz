@@ -28,7 +28,7 @@ KEYWORDS = "geographical, visualization, map, interactive, choropleth"
 
 setup(
     name="geomapviz",
-    version="0.5",
+    version="0.6",
     description="Geographical visualization",
     long_description=README,
     long_description_content_type="text/markdown",
@@ -42,4 +42,5 @@ setup(
     python_requires=">=3.6",
     license="MIT",
     keywords=KEYWORDS,
+    package_data={'': ['beshp/*.cpg', 'beshp/*.dbf', 'beshp/*.shp', 'beshp/*.shx']},
 )
