@@ -33,8 +33,14 @@ prefer light over a black background (I don't know if anyone would).
 Introducing correlation to the geo identifier of regions
 
 ```python
+import numpy as np
+import pandas as pd
+
+# geomapviz
 import geomapviz as gm
+# color maps, see the scicomap package as well
 import cmasher as cmr
+
 
 # the greatest country in the world,
 # first military and economic power in the Universe
@@ -112,7 +118,7 @@ f = gm.plot_on_map(df=bel_df, target='truth', plot_uncertainty=True,
 ```python
 cols_pred = ['feat_2', 'feat_3', 'feat_4']
 f = gm.facet_map(df=bel_df, target='truth', cols_to_plot=cols_pred, dissolve_on='borough',
-                      autobin=True, n_bins=5, geoid='INS', shp_file=shp_file
+                      autobin=True, n_bins=5, geoid='INS', shp_file=shp_file,
                       figsize=(12, 12), ncols=2, normalize=False)
 ```
 
