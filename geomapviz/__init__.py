@@ -1,6 +1,6 @@
 from . import geomapviz
 
-__version__ = "0.6"
+__version__ = "0.6.1"
 __all__ = ["geomapviz"]
 
 # bound to upper level

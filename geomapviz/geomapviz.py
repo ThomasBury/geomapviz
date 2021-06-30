@@ -6,7 +6,7 @@ from __future__ import print_function
 from os.path import dirname, join
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from palettable.cartocolors.qualitative import Bold_10
-from pkg_resources import resource_stream
+from pkg_resources import resource_stream, resource_filename
 # pandas
 import pandas as pd
 import geopandas as gpd
@@ -1133,8 +1133,8 @@ def load_be_shp():
     # module_path = dirname(__file__)
     # base_dir = join(module_path, "beshp")
     # data_filename = join(base_dir, "belgium.shp")
-    stream = resource_stream(__name__, 'beshp/belgium.shp')
-    return gpd.read_file(stream)
+    data_filename = resource_filename(__name__, 'beshp/belgium.shp')
+    return gpd.read_file(data_filename)
 
 
 def set_my_plt_style(height=3, width=5, linewidth=2, bckgnd_color="#f5f5f5"):
