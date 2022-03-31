@@ -320,7 +320,7 @@ def prepare_geo_data(
     geoid="INS",
     weight=None,
     shp_file=None,
-    autobin=False,
+    autobin=False
 ):
     """
     Prepare the geodata to map. Take the dataframe df, which should have a
@@ -782,7 +782,7 @@ def facet_map(
     # if more than 1 column to illustrate, fillna and set the
     # number of rows in the panel plot
     if cols_to_plot is not None:
-        geo_df[cols_to_plot] = geo_df[cols_to_plot].fillna(0)
+        geo_df[cols_to_plot] = geo_df[cols_to_plot]#.fillna(0)
         n_rows = int(np.ceil((len(cols_to_plot) + 1) / ncols))
         ncols_to_plot = len(cols_to_plot + [target])
     else:
