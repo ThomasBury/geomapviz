@@ -1124,7 +1124,7 @@ def load_geometry(shp_path, geoid="INS"):
     return geom_merc
 
 
-def load_be_shp():
+def load_shp(country="BE"):
     """
     Load the shapefile of the Greatest Country in the Universe.
 
@@ -1133,7 +1133,11 @@ def load_be_shp():
     # module_path = dirname(__file__)
     # base_dir = join(module_path, "beshp")
     # data_filename = join(base_dir, "belgium.shp")
-    data_filename = resource_filename(__name__, 'beshp/belgium.shp')
+    if country == "BE":
+        data_filename = resource_filename(__name__, 'shp/belgium.shp')
+    else:
+        raise ValueError("The country must be one of ['BE']")
+    
     return gpd.read_file(data_filename)
 
 
