@@ -7,15 +7,7 @@
 
 # Geographical Visualization
 
-Geomapviz is a package to visualize data on maps at different levels of granularity, aggregating at the specified
-geographical level, dissolving the polygons if needed. The maps can be static (using matplotlib) or
-interactive (using geoviews and holoviews).
-
-It returns a single map or a panel of maps, useful to compare how different models are capturing the geographical
-patterns.
-
-The average values are either returned raw or (auto) binned. You can change the face-colour (background) if you
-prefer light over a black background (I don't know if anyone would).
+Geomapviz is a Python package that allows for data visualization on maps with varying levels of granularity. The package aggregates data at specified geographical levels and can dissolve polygons as needed. Maps can be generated as either static using matplotlib or interactive using geoviews and holoviews. Geomapviz can produce a single map or a panel of maps, making it useful for comparing how different models capture geographical patterns. The package also supports returning average values either raw or automatically binned. Additionally, it allows users to customize the background color, including the option to switch from a black background to a light one.
 
 
 ## Installation

@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = {attr = "geomapviz.__version__"}
+
+[tool.setuptools]
+package-data = {"*" = ["**/*.gz", "**/*.dbf", "**/*.cpg", "**/*.shp", "**/*.shx"]}
+
+[project]
+name = "geomapviz"
+dynamic = ["version"]
+requires-python = ">=3.8"
+description = "data visualization on maps with varying levels of granularity"
+authors = [{name = "Thomas Bury", email = "bury.thomas@gmail.com"}]
+readme = {file = "README.md", content-type = "text/markdown"}
+keywords = ["geographical", "visualization", "map", "interactive", "choropleth"]
+license = {file = "LICENSE.md"}
+classifiers = [
+    "Programming Language :: Python :: 3"
+]
+dependencies = [
+  "holoviews>=1.14.8",
+  "lightgbm>=3.3.2",
+  "matplotlib>=3.5",
+  "numpy>=1.21",
+  "pandas>=1.4",
+  "panel>=0.13",
+  "scikit_learn>=1.0",
+  "scipy>=1.8.0",
+  "seaborn>=0.11.2",
+  "shap>=0.40.0",
+  "tqdm>=4.62.3",
+]
+
+
+[project.urls]
+homepage = "https://github.com/ThomasBury/geomapviz"
+documentation = "https://github.com/ThomasBury/geomapviz"
+repository = "https://github.com/ThomasBury/geomapviz.git"
+changelog = "https://github.com/ThomasBury/geomapviz"
+Tracker = "https://github.com/ThomasBury/geomapviz/issues"
+
+[project.optional-dependencies]
+doc = [
+  "nbsphinx>=0.8.8",
+  "ipykernel>=6.9.1",
+  "ipython_genutils",
+  "pandoc",
+  "sphinx>=4.4.0",
+  "sphinx-autodoc-typehints>=1.16.0",
+  "sphinx-copybutton>=0.5.0",
+  "sphinx-rtd-theme>=1.0.0",
+  "sphinx-tabs>=3.2.0",
+]
+lint = [
+  "black",
+  "flake8"
+]
+test = [
+  "pytest",
+  "pytest-cov",
+]
