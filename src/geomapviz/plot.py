@@ -6,6 +6,7 @@ from __future__ import print_function
 from os.path import dirname, join
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from typing import Optional, Union, Tuple, List, Dict, Literal
+
 # pandas
 import pandas as pd
 import geopandas as gpd
@@ -71,12 +72,13 @@ def dark_or_light_color(color: str):
     ValueError: Invalid RGBA argument: 'invalid_color'
 
     """
-    [r,g,b] = mpl.colors.to_rgb(color)
+    [r, g, b] = mpl.colors.to_rgb(color)
     hsp = math.sqrt(0.299 * (r * r) + 0.587 * (g * g) + 0.114 * (b * b))
-    if (hsp>127.5):
-        return 'light'
+    if hsp > 127.5:
+        return "light"
     else:
-        return 'dark'
+        return "dark"
+
 
 def set_decimal_precision(nbr_of_dec: str = 2, bins: Optional[np.ndarray] = None):
     """
@@ -85,7 +87,7 @@ def set_decimal_precision(nbr_of_dec: str = 2, bins: Optional[np.ndarray] = None
 
     Parameters
     ----------
-    nbr_of_dec : 
+    nbr_of_dec :
         Number of decimal points to use.
     bins :
         Input array of bins.
@@ -105,29 +107,32 @@ def set_decimal_precision(nbr_of_dec: str = 2, bins: Optional[np.ndarray] = None
 
     return nbr_dec
 
-def calculate_bins(df: pd.DataFrame, 
-                   target: str = "avg",
-                   cols_to_bin: Optional[List[str]] = None, 
-                   n_bins: int = 7,
-                   autobin: bool = False,
-                   normalize: bool = False) -> Dict[str, Optional[np.ndarray]]:
+
+def calculate_bins(
+    df: pd.DataFrame,
+    target: str = "avg",
+    cols_to_bin: Optional[List[str]] = None,
+    n_bins: int = 7,
+    autobin: bool = False,
+    normalize: bool = False,
+) -> Dict[str, Optional[np.ndarray]]:
     """
     Calculate the bin edges for each specified column in a given dataframe.
 
     Parameters
     ----------
-    df : 
+    df :
         The input dataframe.
-    target : 
+    target :
         The column to use as the target for binning (default is 'avg').
-    cols_to_bin : 
+    cols_to_bin :
         The list of columns to calculate the bin edges for (default is None).
         If None, the bin edges will be calculated for all columns in the dataframe.
-    n_bins : 
+    n_bins :
         The number of bins to create (default is 7).
-    autobin : 
+    autobin :
         Whether to automatically calculate the bin edges using Fisher-Jenks optimization (default is False).
-    normalize : 
+    normalize :
         Whether to normalize the data before calculating the bin edges (default is False).
 
     Returns
@@ -138,24 +143,31 @@ def calculate_bins(df: pd.DataFrame,
     """
     if cols_to_bin is None:
         cols_to_bin = []
-        
+
     if autobin:
-        bins_dict = {col: FisherJenks(df[target].fillna(0), n_bins).bins if normalize else FisherJenks(df[col].fillna(0), n_bins).bins for col in cols_to_bin}
+        bins_dict = {
+            col: FisherJenks(df[target].fillna(0), n_bins).bins
+            if normalize
+            else FisherJenks(df[col].fillna(0), n_bins).bins
+            for col in cols_to_bin
+        }
     else:
         bins_dict = {col: None for col in cols_to_bin}
-        
+
     return bins_dict
 
-def create_norm(df: pd.DataFrame,
-                ref_col: str = "avg") -> Tuple[Normalize, float, float]:
+
+def create_norm(
+    df: pd.DataFrame, ref_col: str = "avg"
+) -> Tuple[Normalize, float, float]:
     """
     Calculate the normalization for a color map based on the percentiles of a reference column.
 
     Parameters:
     -----------
-    df: 
+    df:
         The data used to calculate the percentiles and normalization.
-    ref_col: 
+    ref_col:
         The name of the reference column in the dataframe.
 
     Returns:
@@ -174,15 +186,16 @@ def create_norm(df: pd.DataFrame,
     norm = Normalize(vmin=vmin, vmax=vmax)
     return norm, vmin, vmax
 
+
 def create_cbar(ax: plt.Axes, title_col: str):
     """
     Create a colorbar axis to the right of the given axis.
 
     Parameters
     ----------
-    ax : 
+    ax :
         The axis to add the colorbar to.
-    title_col : 
+    title_col :
         The color of the colorbar title.
 
     Returns
@@ -192,10 +205,17 @@ def create_cbar(ax: plt.Axes, title_col: str):
     """
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.1)
-    cax.tick_params(axis="y", labelsize="large", labelcolor=title_col, grid_linewidth=0, color=title_col)
+    cax.tick_params(
+        axis="y",
+        labelsize="large",
+        labelcolor=title_col,
+        grid_linewidth=0,
+        color=title_col,
+    )
     cax.set_frame_on(False)
     return cax
-    
+
+
 @dataclass
 class PlotOptions:
     """Options for generating a thematic map using Matplotlib.
@@ -246,6 +266,7 @@ class PlotOptions:
     PlotOptions
         A PlotOptions object containing the input arguments.
     """
+
     # data arguments
     df: pd.DataFrame
     target: str
@@ -253,7 +274,7 @@ class PlotOptions:
     # weights arguments
     weight: Optional[np.ndarray] = None
     plot_weight: bool = False
-    # geospatial arguments 
+    # geospatial arguments
     dissolve_on: Optional[str] = None
     geoid: str = "nis"
     shp_file: Optional[gpd.geodataframe.GeoDataFrame] = None
@@ -271,33 +292,36 @@ class PlotOptions:
     autobin: bool = False
     normalize: bool = True
     n_bins: int = 7
-     
-def plot_data(df: pd.DataFrame,
-              bins_dict: Dict[str, Optional[List[float]]],
-              ncols: int,
-              facecolor: str,
-              cmap: Optional[str],
-              alpha: float,
-              cols_to_enum: List[str],
-              options: PlotOptions) -> mpl.figure.Figure:
+
+
+def plot_data(
+    df: pd.DataFrame,
+    bins_dict: Dict[str, Optional[List[float]]],
+    ncols: int,
+    facecolor: str,
+    cmap: Optional[str],
+    alpha: float,
+    cols_to_enum: List[str],
+    options: PlotOptions,
+) -> mpl.figure.Figure:
     """
     Plots data for each column in a given DataFrame using the specified bins and other plotting options.
 
     Parameters
     ----------
-    df : 
+    df :
         The input DataFrame containing the data to be plotted.
-    bins_dict : 
+    bins_dict :
         A dictionary where keys are column names and values are lists of bin edges (if column is to be plotted using user-defined bins) or None (if column is to be plotted using equal interval binning).
-    ncols : 
+    ncols :
         The number of columns to use for plotting the subplots.
-    facecolor : 
+    facecolor :
         The facecolor for the plots.
-    cmap : 
+    cmap :
         The colormap to use for the plots. If None, use the default colormap.
-    alpha : 
+    alpha :
         The alpha (transparency) value for the plotted data.
-    cols_to_enum : 
+    cols_to_enum :
         The columns to plot.
     options :
         The options for plotting the data.
@@ -312,15 +336,17 @@ def plot_data(df: pd.DataFrame,
     if ncols == 4:
         nrows, ncols = 2, 2
 
-    f, axs = plt.subplots(ncols=ncols, nrows=nrows, figsize=options.figsize, facecolor=options.facecolor)
+    f, axs = plt.subplots(
+        ncols=ncols, nrows=nrows, figsize=options.figsize, facecolor=options.facecolor
+    )
     axs = axs.flatten() if ncols > 1 else axs
-    
+
     luminance = dark_or_light_color(options.facecolor)
     title_col = "white" if luminance == "dark" else "black"
-    
+
     if options.normalize:
         norm, _, _ = create_norm(df=df, ref_col="avg")
-        
+
     # Plot each column in its corresponding axis
     for i, col in enumerate(cols_to_enum):
         ax = axs[i] if ncols > 1 else axs
@@ -328,39 +354,74 @@ def plot_data(df: pd.DataFrame,
         if bins is None:
             _, vmin, vmax = create_norm(df=df, ref_col=col)
             cax = create_cbar(ax=ax, title_col=title_col)
-            ax = df.plot(column=col, ax=ax, cax=cax, legend=True, linewidth=0, vmin=vmin, vmax=vmax, cmap=cmap, alpha=alpha)
-            if options.normalize:   
-                ax = df.plot(column=col, ax=ax, cax=cax, legend=True, linewidth=0, vmin=vmin, vmax=vmax, cmap=cmap, alpha=alpha, norm=norm)                           
+            ax = df.plot(
+                column=col,
+                ax=ax,
+                cax=cax,
+                legend=True,
+                linewidth=0,
+                vmin=vmin,
+                vmax=vmax,
+                cmap=cmap,
+                alpha=alpha,
+            )
+            if options.normalize:
+                ax = df.plot(
+                    column=col,
+                    ax=ax,
+                    cax=cax,
+                    legend=True,
+                    linewidth=0,
+                    vmin=vmin,
+                    vmax=vmax,
+                    cmap=cmap,
+                    alpha=alpha,
+                    norm=norm,
+                )
         else:
             nbr_dec = set_decimal_precision(options.nbr_of_dec, bins=bins)
-            ax = df.plot(column=col, ax=ax, legend=True, linewidth=0, cmap=cmap, scheme="user_defined", alpha=alpha,
-                             classification_kwds={"bins": bins},
-                             legend_kwds={"facecolor": facecolor, "framealpha": 0, "loc": "lower left","fmt": "{:." + nbr_dec + "f}", "labelcolor": title_col})
+            ax = df.plot(
+                column=col,
+                ax=ax,
+                legend=True,
+                linewidth=0,
+                cmap=cmap,
+                scheme="user_defined",
+                alpha=alpha,
+                classification_kwds={"bins": bins},
+                legend_kwds={
+                    "facecolor": facecolor,
+                    "framealpha": 0,
+                    "loc": "lower left",
+                    "fmt": "{:." + nbr_dec + "f}",
+                    "labelcolor": title_col,
+                },
+            )
         if options.background:
             cx.add_basemap(ax, crs=df.crs, source=options.background)
         ax.set_axis_off()
-        ax.set_title("2 standard dev." if col == "2target_std" else col, color=title_col)
+        ax.set_title(
+            "2 standard dev." if col == "2target_std" else col, color=title_col
+        )
 
     return f
 
 
-
-    
 def plot_on_map(options: PlotOptions):
-    """    
+    """
     Plot data on a map using a GeoDataFrame.
-    
-    This function loads the data from a DataFrame `df`, 
-    aggregates it by geographic area, and plots the resulting averages 
-    on a map using a GeoDataFrame `shp_file`. The `target` column in `df` is 
-    used as the variable to plot on the map. Other 
-    columns can also be plotted using the `other_cols_avg` parameter. 
-    The `weight` parameter can be used to weight the data. 
-    The `dissolve_on` and `geoid` parameters are used to 
-    group the data by geographic area. The `autobin`, `normalize`, and `n_bins` 
-    parameters control the binning of the data. The `cmap` parameter controls the colormap, 
-    and the `facecolor` parameter controls the color of the plot background. The `plot_weight` 
-    and `plot_uncertainty` parameters control whether to plot the weight and uncertainty data, 
+
+    This function loads the data from a DataFrame `df`,
+    aggregates it by geographic area, and plots the resulting averages
+    on a map using a GeoDataFrame `shp_file`. The `target` column in `df` is
+    used as the variable to plot on the map. Other
+    columns can also be plotted using the `other_cols_avg` parameter.
+    The `weight` parameter can be used to weight the data.
+    The `dissolve_on` and `geoid` parameters are used to
+    group the data by geographic area. The `autobin`, `normalize`, and `n_bins`
+    parameters control the binning of the data. The `cmap` parameter controls the colormap,
+    and the `facecolor` parameter controls the color of the plot background. The `plot_weight`
+    and `plot_uncertainty` parameters control whether to plot the weight and uncertainty data,
     respectively. The resulting plot is returned as a matplotlib Figure object.
 
     Parameters
@@ -402,46 +463,48 @@ def plot_on_map(options: PlotOptions):
     # Define the columns to plot and the corresponding bins for each column
     cols_to_enum = ["avg"]
     weight_name = ["count"] if options.weight is None else ["weight"]
-    
+
     if options.plot_uncertainty:
         cols_to_enum += ["ci_low", "ci_up"]
     if options.plot_weight:
         cols_to_enum += weight_name
-        
-    bins_dict = calculate_bins(df=geo_df, 
-                               target="avg",
-                               autobin=options.autobin,
-                               cols_to_bin=cols_to_enum, 
-                               n_bins=options.n_bins,
-                               normalize=options.normalize)    
-    f = plot_data(df=geo_df,
-                  bins_dict=bins_dict,
-                  ncols=ncols,
-                  cols_to_enum=cols_to_enum,
-                  facecolor=options.facecolor,
-                  cmap=cmap,
-                  alpha=alpha,
-                  options=options)
-    return f    
-    
+
+    bins_dict = calculate_bins(
+        df=geo_df,
+        target="avg",
+        autobin=options.autobin,
+        cols_to_bin=cols_to_enum,
+        n_bins=options.n_bins,
+        normalize=options.normalize,
+    )
+    f = plot_data(
+        df=geo_df,
+        bins_dict=bins_dict,
+        ncols=ncols,
+        cols_to_enum=cols_to_enum,
+        facecolor=options.facecolor,
+        cmap=cmap,
+        alpha=alpha,
+        options=options,
+    )
+    return f
 
 
-def calculate_bins_grouped_data(df: pd.DataFrame,
-                   autobin: bool,
-                   n_bins: int,
-                   normalize: bool):
+def calculate_bins_grouped_data(
+    df: pd.DataFrame, autobin: bool, n_bins: int, normalize: bool
+):
     """
     Calculates the bin ranges for a given DataFrame of model averages.
 
     Parameters
     ----------
-    df : 
+    df :
         DataFrame of model averages, with columns "model" and "avg".
-    autobin : 
+    autobin :
         Whether to use Fisher-Jenks algorithm to calculate bins based on the target model or not.
-    n_bins : 
+    n_bins :
         The number of bins to use when calculating bins with the Fisher-Jenks algorithm.
-    normalize : 
+    normalize :
         Whether to use the same bin ranges for all models, or calculate them individually.
 
     Returns
@@ -451,7 +514,11 @@ def calculate_bins_grouped_data(df: pd.DataFrame,
         of bin ranges. If a model's value is None, no binning was performed for that model.
     """
     bins_dict = {}
-    ref_bins = FisherJenks(df.loc[df["model"] == "target", "avg"].fillna(0), n_bins).bins if autobin else None
+    ref_bins = (
+        FisherJenks(df.loc[df["model"] == "target", "avg"].fillna(0), n_bins).bins
+        if autobin
+        else None
+    )
     for name, group in df.groupby("model"):
         if autobin and normalize:
             bins_dict[name] = ref_bins
@@ -461,45 +528,47 @@ def calculate_bins_grouped_data(df: pd.DataFrame,
             bins_dict[name] = None
     return bins_dict
 
-def plot_grouped_data(grouped: pd.core.groupby.DataFrameGroupBy,
-                      nrows: int,
-                      ncols: int,
-                      n_charts: int,
-                      bins_dict: dict,
-                      cmap: Union[str, mpl.colors.Colormap],
-                      alpha: float,
-                      title_col: str,
-                      nbr_of_dec: Optional[int] = None,
-                      facecolor: Optional[str] = None,
-                      background: Optional[str] = None,
-                      figsize: Tuple[float, float] = (10,10),
-                      normalize: bool = False,
-                      ):
+
+def plot_grouped_data(
+    grouped: pd.core.groupby.DataFrameGroupBy,
+    nrows: int,
+    ncols: int,
+    n_charts: int,
+    bins_dict: dict,
+    cmap: Union[str, mpl.colors.Colormap],
+    alpha: float,
+    title_col: str,
+    nbr_of_dec: Optional[int] = None,
+    facecolor: Optional[str] = None,
+    background: Optional[str] = None,
+    figsize: Tuple[float, float] = (10, 10),
+    normalize: bool = False,
+):
     """Plot data grouped by a specified column, using matplotlib subplots.
 
     Parameters
     ----------
-    grouped : 
+    grouped :
         The grouped data to plot. It should contain a "avg" column to plot as the main feature.
-    nrows : 
+    nrows :
         The number of rows of subplots to create.
-    ncols : 
+    ncols :
         The number of columns of subplots to create.
-    n_charts : 
+    n_charts :
         The number of charts to plot.
-    bins_dict : 
+    bins_dict :
         A dictionary with the same keys as the groups in `grouped`, and values
         indicating the binning strategy to use for the corresponding group.
         If None, the data will be plotted without binning.
-    cmap : 
+    cmap :
         The colormap to use for the plot.
-    alpha : 
+    alpha :
         The alpha value to use for the plot.
-    title_col : 
+    title_col :
         The color of the subplot titles.
-    nbr_of_dec : 
+    nbr_of_dec :
         The number of decimal places to use for the legend labels (default is None).
-    facecolor : 
+    facecolor :
         The hex facecolor of the figure (default is None).
     background : str or None, optional
         The background to use for the plot, as a string representing a basemap (default is None).
@@ -511,35 +580,71 @@ def plot_grouped_data(grouped: pd.core.groupby.DataFrameGroupBy,
     matplotlib.figure.Figure
         The resulting matplotlib figure.
     """
-    
-    f, axs = plt.subplots(ncols=ncols, nrows=nrows, figsize=figsize, facecolor=facecolor)
+
+    f, axs = plt.subplots(
+        ncols=ncols, nrows=nrows, figsize=figsize, facecolor=facecolor
+    )
     axs = axs.flatten() if ncols > 1 else axs
-    
-    target_df = grouped.get_group('target')
+
+    target_df = grouped.get_group("target")
     if normalize:
         vmin, vmax = np.nanpercentile(target_df["avg"].fillna(0), [1, 99])
         norm = Normalize(vmin=vmin, vmax=vmax)
-    
+
     for i, (name, group) in enumerate(grouped):
         ax = axs[i] if ncols > 1 else axs
         bins = bins_dict[name]
         if bins is None:
             vmin, vmax = np.nanpercentile(group["avg"].fillna(0), [1, 99])
             cax = create_cbar(ax=ax, title_col=title_col)
-            ax = group.plot(column="avg", ax=ax, cax=cax, legend=True, linewidth=0, vmin=vmin, vmax=vmax, cmap=cmap, alpha=alpha)
-            if normalize:    
-                ax = group.plot(column="avg", ax=ax, cax=cax, legend=True, linewidth=0, vmin=vmin, vmax=vmax, cmap=cmap, alpha=alpha, norm=norm)                               
+            ax = group.plot(
+                column="avg",
+                ax=ax,
+                cax=cax,
+                legend=True,
+                linewidth=0,
+                vmin=vmin,
+                vmax=vmax,
+                cmap=cmap,
+                alpha=alpha,
+            )
+            if normalize:
+                ax = group.plot(
+                    column="avg",
+                    ax=ax,
+                    cax=cax,
+                    legend=True,
+                    linewidth=0,
+                    vmin=vmin,
+                    vmax=vmax,
+                    cmap=cmap,
+                    alpha=alpha,
+                    norm=norm,
+                )
         else:
             nbr_dec = set_decimal_precision(nbr_of_dec, bins=bins)
-            group.plot(column="avg", ax=ax, legend=True, linewidth=0, cmap=cmap, scheme="user_defined", alpha=alpha,
-                       classification_kwds={"bins": bins},
-                       legend_kwds={"facecolor": facecolor, "framealpha": 0, "loc": "lower left",
-                                    "fmt": "{:." + nbr_dec + "f}", "labelcolor": title_col})
+            group.plot(
+                column="avg",
+                ax=ax,
+                legend=True,
+                linewidth=0,
+                cmap=cmap,
+                scheme="user_defined",
+                alpha=alpha,
+                classification_kwds={"bins": bins},
+                legend_kwds={
+                    "facecolor": facecolor,
+                    "framealpha": 0,
+                    "loc": "lower left",
+                    "fmt": "{:." + nbr_dec + "f}",
+                    "labelcolor": title_col,
+                },
+            )
         if background:
             cx.add_basemap(ax, crs=group.crs, source=background)
         ax.set_axis_off()
         ax.set_title(name, color=title_col)
-    
+
     # delete non-used axes
     n_subplots = nrows * ncols
     if n_subplots > n_charts > 1:
@@ -570,7 +675,7 @@ def facet_plot_on_map(options: PlotOptions) -> mpl.figure.Figure:
 
     Notes
     -----
-    This function uses the following helper functions: `dark_or_light_color()`, `dissolve_and_aggregate()`, 
+    This function uses the following helper functions: `dark_or_light_color()`, `dissolve_and_aggregate()`,
     `calculate_bins_grouped_data()`, and `plot_grouped_data()`.
     """
     # Validate the shapefile
@@ -592,8 +697,12 @@ def facet_plot_on_map(options: PlotOptions) -> mpl.figure.Figure:
         shp_file=options.shp_file,
         distr=options.distr,
     )
-    
-    cols_to_plot = [options.target] if options.other_cols_avg is None else [options.target] + options.other_cols_avg
+
+    cols_to_plot = (
+        [options.target]
+        if options.other_cols_avg is None
+        else [options.target] + options.other_cols_avg
+    )
     ncols_to_plot = len(cols_to_plot)
     nrows = int(np.ceil(ncols_to_plot / options.ncols))
 
@@ -603,22 +712,29 @@ def facet_plot_on_map(options: PlotOptions) -> mpl.figure.Figure:
     # Define the colormap
     cmap = options.cmap or "plasma"
     alpha = 1.0 if options.background is None else 0.65
-            
-    bins_dict = calculate_bins_grouped_data(df=geo_df, autobin=options.autobin, n_bins=options.n_bins, normalize=options.normalize)    
+
+    bins_dict = calculate_bins_grouped_data(
+        df=geo_df,
+        autobin=options.autobin,
+        n_bins=options.n_bins,
+        normalize=options.normalize,
+    )
     grouped = geo_df.groupby("model")
-    f = plot_grouped_data(grouped=grouped,
-                          nrows=nrows,
-                          ncols=options.ncols,
-                          n_charts=ncols_to_plot,
-                          bins_dict=bins_dict,
-                          cmap=cmap,
-                          alpha=alpha,
-                          title_col=title_col,
-                          nbr_of_dec=options.nbr_of_dec,
-                          facecolor=options.facecolor,
-                          background=options.background,
-                          figsize=options.figsize,
-                          normalize=options.normalize)
+    f = plot_grouped_data(
+        grouped=grouped,
+        nrows=nrows,
+        ncols=options.ncols,
+        n_charts=ncols_to_plot,
+        bins_dict=bins_dict,
+        cmap=cmap,
+        alpha=alpha,
+        title_col=title_col,
+        nbr_of_dec=options.nbr_of_dec,
+        facecolor=options.facecolor,
+        background=options.background,
+        figsize=options.figsize,
+        normalize=options.normalize,
+    )
 
     return f
 
@@ -805,5 +921,3 @@ def facet_plot_on_map(options: PlotOptions) -> mpl.figure.Figure:
 #         .cols(2)
 #     )
 #     return hvl
-
-

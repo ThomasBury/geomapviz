@@ -2,9 +2,11 @@
 from __future__ import print_function
 from os.path import dirname, join
 from pkg_resources import resource_stream, resource_filename
+
 # pandas
 import pandas as pd
 import geopandas as gpd
+
 
 def load_geometry(shp_path: str, geoid: str = "INS") -> gpd.GeoDataFrame:
     """
@@ -12,9 +14,9 @@ def load_geometry(shp_path: str, geoid: str = "INS") -> gpd.GeoDataFrame:
 
     Parameters
     ----------
-    shp_path : 
+    shp_path :
         The file path of the shapefile to load.
-    geoid : 
+    geoid :
         The name of the geoid column in the GeoDataFrame, by default "INS".
 
     Returns
@@ -34,7 +36,7 @@ def load_shp(country: str = "BE"):
 
     Parameters
     ----------
-    country : 
+    country :
         The ISO 3166-1 alpha-2 code of the country to load. Default is "BE" for Belgium.
 
     Returns
@@ -52,10 +54,10 @@ def load_shp(country: str = "BE"):
     >>> belgium = load_shp("BE")
     >>> belgium.plot()
     """
-    
+
     if country == "BE":
-        data_filename = resource_filename(__name__, 'shp/belgium.shp')
+        data_filename = resource_filename(__name__, "shp/belgium.shp")
     else:
         raise ValueError("The country must be one of ['BE']")
-    
+
     return gpd.read_file(data_filename)

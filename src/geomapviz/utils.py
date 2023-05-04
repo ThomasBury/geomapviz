@@ -22,15 +22,18 @@ def check_list_of_str(str_list: List[str], name: str = "str_list") -> None:
 
     """
     if str_list is not None:
-        if not (isinstance(str_list, list) and all(isinstance(s, str) for s in str_list)):
+        if not (
+            isinstance(str_list, list) and all(isinstance(s, str) for s in str_list)
+        ):
             raise TypeError(f"{name} must be a list of one or more strings.")
-        
+
+
 def convert_category_to_code(df: pd.DataFrame):
     """convert_category_to_code converts categories (levels) to codes for easier representation
 
     Parameters
     ----------
-    df : 
+    df :
         dataframe with cateorical columns
 
     Returns

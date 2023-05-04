@@ -46,31 +46,33 @@ def encode_categorical_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def prepare_dataframe(df: pd.DataFrame, 
-                      groups: Union[List[str], str], 
-                      target: str,
-                      other_cols_avg: Optional[List[str]] = None,
-                      weight: Optional[str] = None, 
-                      verb: int = 0, 
-                      distr: str = "gaussian") -> pd.DataFrame:
+def prepare_dataframe(
+    df: pd.DataFrame,
+    groups: Union[List[str], str],
+    target: str,
+    other_cols_avg: Optional[List[str]] = None,
+    weight: Optional[str] = None,
+    verb: int = 0,
+    distr: str = "gaussian",
+) -> pd.DataFrame:
     """
     Prepare dataframe for the confidence interval computation.
 
     Parameters
     ----------
-    df : 
+    df :
         Input data.
-    groups : 
+    groups :
         List of column names containing the groups of interest.
-    target : 
+    target :
         Name of the target column.
     other_cols_avg :
         Other columns to average, such as the predicted values of a model
-    weight : 
+    weight :
         Name of the weight column. Default is None.
-    verb : 
+    verb :
         Controls the verbosity of the warning message. Default is 0.
-    distr : 
+    distr :
         Name of the distribution. Default is "gaussian".
 
     Returns
@@ -85,13 +87,13 @@ def prepare_dataframe(df: pd.DataFrame,
     """
     if isinstance(groups, str):
         groups = [groups]
-        
-    check_list_of_str(groups) 
+
+    check_list_of_str(groups)
     check_list_of_str(other_cols_avg)
-    
+
     if other_cols_avg is None:
         other_cols_avg = []
-    
+
     if weight is None:
         weight = "weight"
         df_ = df[groups + other_cols_avg + [target]].copy()
@@ -103,24 +105,26 @@ def prepare_dataframe(df: pd.DataFrame,
             )
     else:
         df_ = df[groups + other_cols_avg + [weight, target]].copy()
-        
+
     # to count rows for each level
     df_["count"] = 1
-    
-    df_ = encode_categorical_columns(df_) 
-    
+
+    df_ = encode_categorical_columns(df_)
+
     # for convenience and less complexity through the different function
     # let's rename the columns
-    df_ = df_.rename(columns={target: "target", weight: "weight"}) 
+    df_ = df_.rename(columns={target: "target", weight: "weight"})
 
     return df_
 
-def compute_weighted_average(df: pd.DataFrame, 
-                             groups: Union[str, List[str]],
-                             target: str = "target", 
-                             weight: str = "weight",
-                             other_cols_avg: Optional[List[str]] = None
-                             ):
+
+def compute_weighted_average(
+    df: pd.DataFrame,
+    groups: Union[str, List[str]],
+    target: str = "target",
+    weight: str = "weight",
+    other_cols_avg: Optional[List[str]] = None,
+):
     """compute_weighted_average computes the weighted arithmetic average, grouped by the column `group`.
     The weighted average is :math: `\sum_{i} w_{i} x_{i} / \sum_{i} w_{i}`
     If the weight is None, it computes the arithmetic average without weights :math: `\sum_{i} x_{i} / N`
@@ -142,54 +146,60 @@ def compute_weighted_average(df: pd.DataFrame,
     pd.DataFrame
         the dataframe with the arithmetic average, by group
     """
-    
+
     # the weighted avg is sum(x_i * w_i) / sum(w_i * w_j)
     # this is the numerator
     df[target] = df[target] * df[weight]
-    
+
     # check if str --> make a list
     if isinstance(groups, str):
         groups = [groups]
-        
-    check_list_of_str(groups) 
-    
+
+    check_list_of_str(groups)
+
     if other_cols_avg is None:
         df = (
             df.groupby(groups)[[weight, target, "count"]]
             .sum()
             .reset_index()
             .assign(target=lambda x: x[target] / x[weight])
-            )
+        )
         return df
     else:
-        df[other_cols_avg] = df[other_cols_avg].values * np.expand_dims(df[weight].values, axis=-1)
-        keep_cols = other_cols_avg  + [target, weight, "count"]
-        
+        df[other_cols_avg] = df[other_cols_avg].values * np.expand_dims(
+            df[weight].values, axis=-1
+        )
+        keep_cols = other_cols_avg + [target, weight, "count"]
+
         df = (
             df.groupby(groups)[keep_cols]
             .sum()
             .reset_index()
             .assign(target=lambda x: x[target] / x[weight])
-            )
-        df[other_cols_avg] = df[other_cols_avg].values / np.expand_dims(df[weight].values, axis=-1)
-        
+        )
+        df[other_cols_avg] = df[other_cols_avg].values / np.expand_dims(
+            df[weight].values, axis=-1
+        )
 
         return df
-     
-def compute_confidence_interval(df: pd.DataFrame,
-                                groups: Union[str, List[str]],
-                                target: str = "target",
-                                weight: str = "weight",  
-                                other_cols_avg: Optional[List[str]] = None,
-                                distr: str = "gaussian", 
-                                n_std: float = 2.0):
+
+
+def compute_confidence_interval(
+    df: pd.DataFrame,
+    groups: Union[str, List[str]],
+    target: str = "target",
+    weight: str = "weight",
+    other_cols_avg: Optional[List[str]] = None,
+    distr: str = "gaussian",
+    n_std: float = 2.0,
+):
     # check if str --> make a list
     if isinstance(groups, str):
         groups = [groups]
-        
-    check_list_of_str(groups) 
+
+    check_list_of_str(groups)
     selected_cols = groups + [target, weight, "count"]
-    
+
     # update the list of selected columns if predictions are included
     if other_cols_avg:
         selected_cols = list(set(selected_cols).union(set(other_cols_avg)))
@@ -208,17 +218,22 @@ def compute_confidence_interval(df: pd.DataFrame,
     elif distr == "gaussian":
         df_long["target_std"] = df_long["avg"] * np.sqrt(1 / df_long["count"])
     else:
-        warnings.warn('distr is not in ["poisson", "gamma", "gaussian"], using Gaussian approx. for the conf. int.')
+        warnings.warn(
+            'distr is not in ["poisson", "gamma", "gaussian"], using Gaussian approx. for the conf. int.'
+        )
         df_long["target_std"] = df_long["avg"] * np.sqrt(1 / df_long["count"])
-        
+
     df_long["ci_low"] = df_long["avg"] - n_std * df_long["target_std"]
     df_long["ci_low"] = df_long["ci_low"].clip(lower=0)
     df_long["ci_up"] = df_long["avg"] + n_std * df_long["target_std"]
     upper_bound = df_long["ci_up"].quantile(0.999)
     df_long["ci_up"] = df_long["ci_up"].clip(upper=upper_bound)
-    df_long = df_long.reset_index()[["model"] + groups + ["avg", "ci_low", "ci_up", weight, "count"]]
-    return df_long  
-    
+    df_long = df_long.reset_index()[
+        ["model"] + groups + ["avg", "ci_low", "ci_up", weight, "count"]
+    ]
+    return df_long
+
+
 def weighted_average_aggregator(
     df: pd.DataFrame,
     groups: Union[str, List[str]],
@@ -226,7 +241,7 @@ def weighted_average_aggregator(
     other_cols_avg: Optional[List[str]] = None,
     distr: str = "gaussian",
     weight: str = None,
-    verb: int = 0
+    verb: int = 0,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Computes the weighted average and the confidence interval of a target variable
@@ -234,25 +249,25 @@ def weighted_average_aggregator(
 
     Parameters
     ----------
-    df : 
+    df :
         The input DataFrame to compute the weighted average and confidence interval on.
-    groups : 
+    groups :
         The name(s) of the column(s) in `df` that define the groups to aggregate.
         If `groups` is a string, it will be interpreted as a single group column name.
         If `groups` is a list of strings, it will be interpreted as multiple group column names.
-    target : 
+    target :
         The name of the column in `df` that contains the target variable to aggregate.
-    other_cols_avg : 
+    other_cols_avg :
         The predicted values of the target variable to use for computing the confidence interval
         or any other columns to average.
         If `other_cols_avg` is not None, it should be a list of column names.
-    distr : 
+    distr :
         The distribution to use for computing the confidence interval.
         Supported distributions are 'gaussian' (default), 't' and 'bootstrap'.
-    weight : 
+    weight :
         The name of the column in `df` that contains the weights to use for computing the weighted average.
         If `weight` is None (default), all rows are assumed to have equal weight.
-    verb : 
+    verb :
         Verbosity level of the function (0: no message, 1: info, 2: debug).
         The default is 0.
 
@@ -280,35 +295,56 @@ def weighted_average_aggregator(
     >>> weights = 'weights'
     >>> data[weights] = [1, 2, 3, 4, 5]
     >>> result, conf = weighted_average_aggregator(df=data, groups=groups, target=target, weight=weights)
-    """  
-    
+    """
+
     # check if str --> make a list
     if isinstance(groups, str):
         groups = [groups]
-        
-    check_list_of_str(groups) 
-    
-    df_ = prepare_dataframe(df=df,
-                            groups=groups,
-                            target=target,
-                            other_cols_avg=other_cols_avg,
-                            weight=weight,
-                            verb=verb,
-                            distr=distr)
-            
-    df_ = encode_categorical_columns(df_)  
-        
+
+    check_list_of_str(groups)
+
+    df_ = prepare_dataframe(
+        df=df,
+        groups=groups,
+        target=target,
+        other_cols_avg=other_cols_avg,
+        weight=weight,
+        verb=verb,
+        distr=distr,
+    )
+
+    df_ = encode_categorical_columns(df_)
+
     # for convenience and less complexity through the different function
     # let's rename the columns
-    df_ = df_.rename(columns={target: "target", weight: "weight"})  
-    
-    df_= compute_weighted_average(df=df_, groups=groups, other_cols_avg=other_cols_avg, weight="weight", target="target")
-    df_long = compute_confidence_interval(df=df_, groups=groups, other_cols_avg=other_cols_avg, distr=distr, n_std=2.0, weight="weight", target="target")
-    
+    df_ = df_.rename(columns={target: "target", weight: "weight"})
+
+    df_ = compute_weighted_average(
+        df=df_,
+        groups=groups,
+        other_cols_avg=other_cols_avg,
+        weight="weight",
+        target="target",
+    )
+    df_long = compute_confidence_interval(
+        df=df_,
+        groups=groups,
+        other_cols_avg=other_cols_avg,
+        distr=distr,
+        n_std=2.0,
+        weight="weight",
+        target="target",
+    )
+
     return df_, df_long
 
 
-def merge_zip_df(zip_path: str, df: pd.DataFrame, geoid: str = "geoid", cols_to_keep: Optional[List[str]] = None) -> pd.DataFrame:
+def merge_zip_df(
+    zip_path: str,
+    df: pd.DataFrame,
+    geoid: str = "geoid",
+    cols_to_keep: Optional[List[str]] = None,
+) -> pd.DataFrame:
     """
     Merge a DataFrame `df` with a mapping table for the zipcode and other relevant geographical information
     (district name, sub-districts, etc.). The key is the `geoid` column.
@@ -325,9 +361,9 @@ def merge_zip_df(zip_path: str, df: pd.DataFrame, geoid: str = "geoid", cols_to_
     ----------
     zip_path :
         The path to the zipcode mapper, a csv file with additional geo info and a geoid column
-    df : 
+    df :
         The DataFrame to merge with the zipcode mapper
-    geoid : 
+    geoid :
         The name of the `geoid` column in both the `df` and the zipcode mapper
     cols_to_keep :
         The list of columns to keep from the zipcode mapper. If None, keep all columns.
@@ -370,30 +406,30 @@ def dissolve_and_aggregate(
     geoid: str = "INS",
     weight: Optional[List[str]] = None,
     shp_file: Union[gpd.geodataframe.GeoDataFrame, None] = None,
-    ) -> gpd.GeoDataFrame:
+) -> gpd.GeoDataFrame:
     """
     Dissolves a GeoDataFrame based on a column, and aggregates data based on the
     dissolved polygons.
 
     Parameters
     ----------
-    df : 
+    df :
         Dataframe with the data to be aggregated.
-    cols_to_plot : 
+    cols_to_plot :
         List of columns to plot on map.
-    target : 
+    target :
         Column with the target variable.
-    other_cols_avg : 
+    other_cols_avg :
         Columns with the predicted values or any other columns to average.
-    distr : 
+    distr :
         Distribution of the target variable, by default "gaussian".
-    weight : 
+    weight :
         Column with the weights to be used, by default None.
-    dissolve_on : 
+    dissolve_on :
         Column to dissolve the GeoDataFrame, by default None.
-    geoid : 
+    geoid :
         Column with the geoid, by default "geoid".
-    shp_file : 
+    shp_file :
         The shapefile to use for the map, as a GeoDataFrame. The default is None.
 
     Returns
@@ -405,9 +441,9 @@ def dissolve_and_aggregate(
 
     if not isinstance(shp_file, gpd.geodataframe.GeoDataFrame):
         raise TypeError("The shapefile should be a GeoDataFrame")
-        
+
     geom_merc = shp_file.copy()
-    
+
     if other_cols_avg and not isinstance(other_cols_avg, list):
         raise TypeError("'other_cols_avg' should be a list of strings or None")
 
@@ -419,7 +455,12 @@ def dissolve_and_aggregate(
         groups = geoid
 
     df_, df_long = weighted_average_aggregator(
-        df=df, groups=groups, target=target, other_cols_avg=other_cols_avg, distr=distr, weight=weight
+        df=df,
+        groups=groups,
+        target=target,
+        other_cols_avg=other_cols_avg,
+        distr=distr,
+        weight=weight,
     )
 
     if dissolve_on:
@@ -432,7 +473,7 @@ def dissolve_and_aggregate(
     df_long = df_long.fillna(0)
     df_[merge_key] = df_[merge_key].astype(str)
     geo_df[merge_key] = geo_df[merge_key].astype(str)
-    
+
     geo_df = geo_df.merge(df_long, left_on=merge_key, right_on=merge_key, how="left")
 
     return gpd.GeoDataFrame(geo_df)
