@@ -706,7 +706,7 @@ def facet_plot_on_map(options: PlotOptions) -> mpl.figure.Figure:
     nrows = int(np.ceil(ncols_to_plot / options.ncols))
 
     # Fillna with 0 for the specified columns
-    geo_df["model"] = np.nan_to_num(geo_df["model"].values)
+    geo_df["model"] = geo_df["model"].fillna(0).values
 
     # Define the colormap
     cmap = options.cmap or "plasma"
