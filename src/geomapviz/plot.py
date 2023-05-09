@@ -36,8 +36,8 @@ hv.renderer("bokeh").theme = "light_minimal"
 sns.set(style="ticks")
 
 __all__ = [
-    "plot_on_map",
-    "facet_plot_on_map",
+    "spatial_average_plot",
+    "spatial_average_facetplot",
 ]
 
 def dark_or_light_color(color: str):
@@ -406,7 +406,7 @@ def plot_data(
     return f
 
 
-def plot_on_map(options: PlotOptions):
+def spatial_average_plot(options: PlotOptions):
     """
     Plot data on a map using a GeoDataFrame.
 
@@ -586,15 +586,16 @@ def plot_grouped_data(
     axs = axs.flatten() if ncols > 1 else axs
 
     target_df = grouped.get_group("target")
+    
     if normalize:
-        vmin, vmax = np.nanpercentile(target_df["avg"].fillna(0), [1, 99])
-        norm = Normalize(vmin=vmin, vmax=vmax)
+        norm, vmin, vmax = create_norm(df=target_df, ref_col="avg")
 
     for i, (name, group) in enumerate(grouped):
         ax = axs[i] if ncols > 1 else axs
         bins = bins_dict[name]
         if bins is None:
-            vmin, vmax = np.nanpercentile(group["avg"].fillna(0), [1, 99])
+            _, vmin, vmax = create_norm(df=group ref_col="avg")
+            # vmin, vmax = np.nanpercentile(group["avg"].fillna(0), [1, 99])
             cax = create_cbar(ax=ax, title_col=title_col)
             ax = group.plot(
                 column="avg",
@@ -653,7 +654,7 @@ def plot_grouped_data(
     return f
 
 
-def facet_plot_on_map(options: PlotOptions) -> mpl.figure.Figure:
+def spatial_average_facetplot(options: PlotOptions) -> mpl.figure.Figure:
     """
     Create a facet plot of spatial data on a map.
 
