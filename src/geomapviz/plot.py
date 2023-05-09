@@ -594,7 +594,7 @@ def plot_grouped_data(
         ax = axs[i] if ncols > 1 else axs
         bins = bins_dict[name]
         if bins is None:
-            _, vmin, vmax = create_norm(df=group ref_col="avg")
+            _, vmin, vmax = create_norm(df=group, ref_col="avg")
             # vmin, vmax = np.nanpercentile(group["avg"].fillna(0), [1, 99])
             cax = create_cbar(ax=ax, title_col=title_col)
             ax = group.plot(
