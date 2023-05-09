@@ -22,14 +22,14 @@ import seaborn as sns
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
-import cmasher as cmr
 import cartopy.crs as ccrs
 import holoviews as hv
-import geoviews as gv
+# import geoviews as gv
 from holoviews import opts
 import contextily as cx
 
 from .aggregator import weighted_average_aggregator, dissolve_and_aggregate
+
 
 hv.extension("bokeh", logo=False)
 hv.renderer("bokeh").theme = "light_minimal"
@@ -39,7 +39,6 @@ __all__ = [
     "plot_on_map",
     "facet_plot_on_map",
 ]
-
 
 def dark_or_light_color(color: str):
     """Determine whether a given color is light or dark.
