@@ -38,6 +38,7 @@ sns.set(style="ticks")
 __all__ = [
     "spatial_average_plot",
     "spatial_average_facetplot",
+    "PlotOptions"
 ]
 
 def dark_or_light_color(color: str):
