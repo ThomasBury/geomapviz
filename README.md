@@ -28,6 +28,10 @@ Geomapviz is a Python library for visualizing geospatial tabular data. It aggreg
 The [documentation notebook](nb/geomap.ipynb) illustrates the functionality of `geomapviz`
 ## Changes
 
+### 1.0
+
+ - Complete refactoring of the library, including modular features and simpler code base
+
 ### 0.6
 
  - Including files in source distributions
