@@ -10,17 +10,10 @@
 Geomapviz is a Python library for visualizing geospatial tabular data. It aggregates tabular data at the geoid level, merges it with the shapefile, and provides a simple API to plot the average for single or multiple columns. The library is designed to create beautiful and interactive visualizations that help users better understand geospatial data. Geomapviz can produce a single map or a panel of maps, making it useful for comparing how different models capture geographical patterns. The package also supports returning average values either raw or automatically binned. Additionally, it allows users to customize the background color, including the option to switch from a black background to a light one. The styling is handled by a DataClass, PlotOptions, object is used to specify various arguments for creating a geospatial plot of a dataset
 
 
-<table >
-  <tr>
-    <td align="left"><img src="pics/example.png" width="600"/></td>
-  </tr>
-</table>
 
-<table >
-  <tr>
-    <td align="left"><img src="pics/example2.png" width="600"/></td>
-  </tr>
-</table>
+<td align="left"><img src="pics/example_01.png" width="600"/></td>
+<td align="left"><img src="pics/example_02.png" width="300"/></td>
+
 
 ## Installation
 
