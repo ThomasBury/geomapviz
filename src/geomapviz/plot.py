@@ -10,8 +10,9 @@ from typing import Optional, Union, Tuple, List, Dict, Literal
 # pandas
 import pandas as pd
 import geopandas as gpd
-from mapclassify import Quantiles, FisherJenks
+from mapclassify import FisherJenks
 from dataclasses import dataclass
+from pandas.api.types import CategoricalDtype
 
 # numpy
 import numpy as np
@@ -24,11 +25,11 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 import cartopy.crs as ccrs
 import holoviews as hv
-# import geoviews as gv
+import geoviews as gv
 from holoviews import opts
 import contextily as cx
 
-from .aggregator import weighted_average_aggregator, dissolve_and_aggregate
+from .aggregator import dissolve_and_aggregate
 
 
 hv.extension("bokeh", logo=False)
@@ -38,6 +39,7 @@ sns.set(style="ticks")
 __all__ = [
     "spatial_average_plot",
     "spatial_average_facetplot",
+    "spatial_average_facetplot_interactive",
 ]
 
 def dark_or_light_color(color: str):
@@ -142,17 +144,16 @@ def calculate_bins(
     """
     if cols_to_bin is None:
         cols_to_bin = []
-
-    if autobin:
-        bins_dict = {
-            col: FisherJenks(df[target].fillna(0), n_bins).bins
-            if normalize
-            else FisherJenks(df[col].fillna(0), n_bins).bins
-            for col in cols_to_bin
-        }
-    else:
-        bins_dict = {col: None for col in cols_to_bin}
-
+    
+    bins_dict = {}
+    for col in cols_to_bin:
+        if autobin:
+            bins = FisherJenks(df[target].fillna(0), n_bins).bins if normalize else (
+                FisherJenks(df[col].fillna(0), n_bins).bins if df[col].nunique() > n_bins else None)
+        else:
+            bins = None
+        bins_dict[col] = bins
+    
     return bins_dict
 
 
@@ -259,6 +260,8 @@ class PlotOptions:
         A boolean flag indicating whether to normalize the color scale, by default True.
     n_bins : int, optional
         The number of bins to use when manually calculating bin thresholds for the target variable, by default 7.
+    interactive : bool
+        whether to use interactive charts or not.
 
     Returns
     -------
@@ -281,16 +284,19 @@ class PlotOptions:
     distr: str = "gaussian"
     plot_uncertainty: bool = False
     # style arguments
+    alpha: float = 0.5
     background: Optional[str] = None
     figsize: Tuple[float, float] = (12, 12)
     ncols: int = 2
-    cmap: Optional[str] = None
+    cmap: Optional[str] = "plasma"
     facecolor: str = "#2b303b"
     nbr_of_dec: Optional[int] = None
     # binning arguments
     autobin: bool = False
     normalize: bool = True
     n_bins: int = 7
+    # matplotlib or holoviews
+    interactive = False
 
 
 def plot_data(
@@ -393,7 +399,7 @@ def plot_data(
                     "framealpha": 0,
                     "loc": "lower left",
                     "fmt": "{:." + nbr_dec + "f}",
-                    "labelcolor": title_col,
+                    "labelcolor": "gray",
                 },
             )
         if options.background:
@@ -490,15 +496,15 @@ def spatial_average_plot(options: PlotOptions):
 
 
 def calculate_bins_grouped_data(
-    df: pd.DataFrame, autobin: bool, n_bins: int, normalize: bool
+    grouped: pd.core.groupby.DataFrameGroupBy, autobin: bool, n_bins: int, normalize: bool
 ):
     """
     Calculates the bin ranges for a given DataFrame of model averages.
 
     Parameters
     ----------
-    df :
-        DataFrame of model averages, with columns "model" and "avg".
+    grouped :
+        The grouped data to plot. It should contain a "avg" column to plot as the main feature.
     autobin :
         Whether to use Fisher-Jenks algorithm to calculate bins based on the target model or not.
     n_bins :
@@ -513,16 +519,17 @@ def calculate_bins_grouped_data(
         of bin ranges. If a model's value is None, no binning was performed for that model.
     """
     bins_dict = {}
+    target_df = grouped.get_group("target")
     ref_bins = (
-        FisherJenks(df.loc[df["model"] == "target", "avg"].fillna(0), n_bins).bins
+        FisherJenks(target_df["avg"].fillna(0), n_bins)
         if autobin
         else None
     )
-    for name, group in df.groupby("model"):
+    for name, group in grouped:
         if autobin and normalize:
             bins_dict[name] = ref_bins
-        elif autobin:
-            bins_dict[name] = FisherJenks(group["avg"].fillna(0), n_bins).bins
+        elif autobin and (group["avg"].nunique() > n_bins):
+            bins_dict[name] = FisherJenks(group["avg"].fillna(0), n_bins)
         else:
             bins_dict[name] = None
     return bins_dict
@@ -592,7 +599,7 @@ def plot_grouped_data(
 
     for i, (name, group) in enumerate(grouped):
         ax = axs[i] if ncols > 1 else axs
-        bins = bins_dict[name]
+        bins = bins_dict[name].bins
         if bins is None:
             _, vmin, vmax = create_norm(df=group, ref_col="avg")
             # vmin, vmax = np.nanpercentile(group["avg"].fillna(0), [1, 99])
@@ -637,7 +644,7 @@ def plot_grouped_data(
                     "framealpha": 0,
                     "loc": "lower left",
                     "fmt": "{:." + nbr_dec + "f}",
-                    "labelcolor": title_col,
+                    "labelcolor": "gray",
                 },
             )
         if background:
@@ -712,212 +719,256 @@ def spatial_average_facetplot(options: PlotOptions) -> mpl.figure.Figure:
     # Define the colormap
     cmap = options.cmap or "plasma"
     alpha = 1.0 if options.background is None else 0.65
+    
+    grouped = geo_df.groupby("model")
 
     bins_dict = calculate_bins_grouped_data(
-        df=geo_df,
+        grouped=grouped,
         autobin=options.autobin,
         n_bins=options.n_bins,
         normalize=options.normalize,
     )
-    grouped = geo_df.groupby("model")
-    f = plot_grouped_data(
-        grouped=grouped,
-        nrows=nrows,
-        ncols=options.ncols,
-        n_charts=ncols_to_plot,
-        bins_dict=bins_dict,
-        cmap=cmap,
-        alpha=alpha,
-        title_col=title_col,
-        nbr_of_dec=options.nbr_of_dec,
-        facecolor=options.facecolor,
-        background=options.background,
-        figsize=options.figsize,
-        normalize=options.normalize,
-    )
+    if options.interactive:
+        f = plot_grouped_data_interactive(
+            grouped=grouped,
+            ncols=options.ncols,
+            bins_dict=bins_dict,
+            cmap=options.cmap,
+            alpha=options.alpha,
+            nbr_of_dec=options.nbr_of_dec,
+            background=options.background,
+            figsize=options.figsize,
+            normalize=options.normalize)
+    else:
+        f = plot_grouped_data(
+            grouped=grouped,
+            nrows=nrows,
+            ncols=options.ncols,
+            n_charts=ncols_to_plot,
+            bins_dict=bins_dict,
+            cmap=cmap,
+            alpha=alpha,
+            title_col=title_col,
+            nbr_of_dec=options.nbr_of_dec,
+            facecolor=options.facecolor,
+            background=options.background,
+            figsize=options.figsize,
+            normalize=options.normalize,
+        )
 
     return f
 
 
-# def facet_map_interactive(
-#     df: pd.DataFrame,
-#     target: str,
-#     cols_to_plot: Optional[list[str]] = None,
-#     predicted: Optional[str] = None,
-#     dissolve_on: Optional[str] = None,
-#     alpha: float = 0.5,
-#     autobin: bool = False,
-#     n_bins: int = 7,
-#     geoid: str = "nis",
-#     weight: str = "exp_yr",
-#     shp_file: Optional[str] = None,
-#     figsize: tuple[int, int] = (12, 12),
-#     ncols: int = 2,
-#     cmap: Optional[str] = None,
-#     normalize: bool = True,
-#     tiles_src: Optional[str] = None,
-# ) -> hv.Layout:
-#     """
-#     Creates an interactive map with choropleth plots for one or more columns of a DataFrame.
+def get_tiles(tiles_src: Optional[str]) -> hv.element.tiles:
+    """
+    Get a HoloViews tiles element for a specified tiles source string.
 
-#     Parameters:
-#     -----------
-#     df : pandas.DataFrame
-#         The input DataFrame with geographic data.
-#     target : str
-#         The column name for the target variable to plot.
-#     cols_to_plot : list of str, optional (default=None)
-#         The list of column names to plot. If None, all numeric columns except the target column will be plotted.
-#     predicted : str, optional (default=None)
-#         The column name for the predicted values to plot.
-#     dissolve_on : str, optional (default=None)
-#         The column name to use for dissolving geometries before plotting.
-#     alpha : float, optional (default=0.5)
-#         The alpha value to use for the plot polygons.
-#     autobin : bool, optional (default=False)
-#         Whether to automatically bin the target column values or not.
-#     n_bins : int, optional (default=7)
-#         The number of bins to use when autobinning.
-#     geoid : str, optional (default='nis')
-#         The name of the column with the geoid.
-#     weight : str, optional (default='exp_yr')
-#         The name of the column with the weights.
-#     shp_file : str, optional (default=None)
-#         The name of the shapefile to use for plotting.
-#     figsize : tuple of int, optional (default=(12, 12))
-#         The figure size to use for the plot.
-#     ncols : int, optional (default=2)
-#         The number of columns to use for the plot layout.
-#     cmap : str, optional (default=None)
-#         The name of the colormap to use for the plot.
-#     normalize : bool, optional (default=True)
-#         Whether to normalize the plot colors or not.
-#     tiles_src : str, optional (default=None)
-#         The name of the tile source to use for the plot.
+    Parameters
+    ----------
+    tiles_src : str, optional
+        The tiles source to use. If None, use "CartoLight" as the default.
 
-#     Returns:
-#     --------
-#     hv.Layout
-#         The HoloViews layout object with the plot.
-#     """
+    Returns
+    -------
+    hv.element.tiles
+        The tiles element corresponding to the specified tiles source.
+    """
 
-#     if not isinstance(ncols, int):
-#         raise ValueError("'ncols' should be an integer")
+    if tiles_src is None:
+        tiles_src = "CartoLight"
 
-#     # load the data to illustrate
-#     geo_df = prepare_geo_data(
-#         df=df,
-#         cols_to_plot=cols_to_plot,
-#         target=target,
-#         predicted=predicted,
-#         dissolve_on=dissolve_on,
-#         n_bins=n_bins,
-#         geoid=geoid,
-#         weight=weight,
-#         shp_file=shp_file,
-#         autobin=False,
-#     )
+    if tiles_src not in hv.element.tiles.tile_sources.keys():
+        raise ValueError(
+            f"`tiles_src` should be a string and one of {list(hv.element.tiles.tile_sources.keys())}"
+        )
 
-#     # if more than 1 column to illustrate, fillna and set
-#     # the number of rows in the panel plot
-#     if cols_to_plot is not None:
-#         geo_df[cols_to_plot] = geo_df[cols_to_plot].fillna(0)
-#     else:
-#         cols_to_plot = []
+    return hv.element.tiles.tile_sources[tiles_src]()
 
-#     if (tiles_src is not None) and (
-#         tiles_src not in list(hv.element.tiles.tile_sources.keys())
-#     ):
-#         raise ValueError(
-#             "`tiles_src` should be a string and one "
-#             "of {}".format(list(hv.element.tiles.tile_sources.keys()))
-#         )
-#     elif (tiles_src is not None) and (
-#         tiles_src in list(hv.element.tiles.tile_sources.keys())
-#     ):
-#         tiles = hv.element.tiles.tile_sources[tiles_src]()
-#     else:
-#         tiles = hv.element.tiles.tile_sources["CartoLight"]()
+def get_interactive_plot_options(col,cmap, alpha):
+    return dict(
+            tools=["hover"],
+            width=550,
+            height=450,
+            color=gv.dim("avg"),
+            cmap=cmap,
+            colorbar=True,
+            toolbar="above",
+            xaxis=None,
+            yaxis=None,
+            alpha=alpha,
+            title=col,
+            clipping_colors={"NaN": "white"},
+        )
 
-#     # define colour_map
-#     if (cmap is None) and (autobin is False):
-#         colour_map = cmr.tropical  # Thermal_20.mpl_colormap
-#     elif (cmap is None) and (autobin is True):
-#         colour_map = cmr.tropical
-#     else:
-#         colour_map = cmap
+def get_facet(df, tiles, vmin, vmax, plot_opts, cbar_labels=None):
+    polygons = gv.Polygons(df, vdims=[hv.Dimension("avg", range=(vmin, vmax))],  
+                                crs=ccrs.GOOGLE_MERCATOR).opts(**plot_opts)
+    if cbar_labels:
+        polygons.opts(colorbar_opts={'major_label_overrides': cbar_labels}, color_levels=len(cbar_labels))
+    facet = tiles * polygons
+    return facet
 
-#     hv_plot_list = []
-#     # loop over the columns to illustrate
-#     for i, col in enumerate([target] + cols_to_plot):
+def plot_grouped_data_interactive(
+    grouped: pd.core.groupby.DataFrameGroupBy,
+    ncols: int,
+    bins_dict: dict,
+    cmap: Union[str, mpl.colors.Colormap],
+    alpha: float,
+    nbr_of_dec: Optional[int] = None,
+    background: Optional[str] = None,
+    figsize: Tuple[float, float] = (10, 10),
+    normalize: bool = False,
+):
+    """Plot data grouped by a specified column, using matplotlib subplots.
 
-#         plot_opts = dict(
-#             tools=["hover"],
-#             width=550,
-#             height=450,
-#             color_index=col,
-#             cmap=colour_map,
-#             colorbar=True,
-#             toolbar="above",
-#             xaxis=None,
-#             yaxis=None,
-#             alpha=alpha,
-#             title=col,
-#             clipping_colors={"NaN": "white"},
-#         )
+    Parameters
+    ----------
+    grouped :
+        The grouped data to plot. It should contain a "avg" column to plot as the main feature.
+    nrows :
+        The number of rows of subplots to create.
+    ncols :
+        The number of columns of subplots to create.
+    n_charts :
+        The number of charts to plot.
+    bins_dict :
+        A dictionary with the same keys as the groups in `grouped`, and values
+        indicating the binning strategy to use for the corresponding group.
+        If None, the data will be plotted without binning.
+    cmap :
+        The colormap to use for the plot.
+    alpha :
+        The alpha value to use for the plot.
+    title_col :
+        The color of the subplot titles.
+    nbr_of_dec :
+        The number of decimal places to use for the legend labels (default is None).
+    facecolor :
+        The hex facecolor of the figure (default is None).
+    background : str or None, optional
+        The background to use for the plot, as a string representing a basemap (default is None).
+    figsize : tuple, optional
+        The size of the figure, as a tuple of (width, height) in inches (default is (10,10)).
 
-#         if autobin:
-#             if normalize:
-#                 ser, bins = pd.qcut(
-#                     geo_df[target].fillna(0), q=n_bins, retbins=True, labels=None, precision=2
-#                 )
-#                 geo_df[col] = (
-#                     pd.cut(
-#                         geo_df[col].fillna(0),
-#                         bins=bins,
-#                         labels=np.unique(ser),
-#                         include_lowest=True,
-#                     )
-#                     .apply(lambda x: x.mid)
-#                     .astype(float)
-#                 )
-#                 # pd.cut(geo_df[col], q=n_bins, duplicates='drop').
-#                 # apply(lambda x: x.mid).astype(float)
-#             else:
-#                 geo_df[col] = (
-#                     pd.qcut(geo_df[col], q=n_bins, duplicates="drop", precision=2)
-#                     .apply(lambda x: x.mid)
-#                     .astype(float)
-#                 )
-#                 # .apply(lambda x: x.mid).astype(float)
+    Returns
+    -------
+    matplotlib.figure.Figure
+        The resulting matplotlib figure.
+    """
 
-#             hv_plot_list.append(
-#                 tiles
-#                 * gv.Polygons(
-#                     geo_df, vdims=[hv.Dimension(col)], crs=ccrs.GOOGLE_MERCATOR
-#                 ).opts(**plot_opts)
-#             )
-#         else:
-#             if normalize:
-#                 vmax = np.nanpercentile(geo_df[target].fillna(0), 99)
-#                 vmin = np.nanpercentile(geo_df[target].fillna(0), 1)
-#             else:
-#                 vmax = np.nanpercentile(geo_df[col].fillna(0), 99)
-#                 vmin = np.nanpercentile(geo_df[col].fillna(0), 1)
+    target_df = grouped.get_group("target")
+    
+    if normalize:
+        norm, vmin, vmax = create_norm(df=target_df, ref_col="avg")
 
-#             hv_plot_list.append(
-#                 tiles
-#                 * gv.Polygons(
-#                     geo_df,
-#                     vdims=[hv.Dimension(col, range=(vmin, vmax))],
-#                     crs=ccrs.GOOGLE_MERCATOR,
-#                 ).opts(**plot_opts)
-#             )
+    background = get_tiles(tiles_src=background)
+    facet_list = []
+    
+    for name, group in grouped:
+        
+        plot_opts = get_interactive_plot_options(col=name, cmap=cmap, alpha=alpha)
 
-#     # Display the figure
-#     hvl = (
-#         hv.Layout(hv_plot_list)
-#         .opts(opts.Tiles(width=figsize[0], height=figsize[1]))
-#         .cols(2)
-#     )
-#     return hvl
+        bins = bins_dict[name]
+        if bins is None:
+            if not normalize:
+                _, vmin, vmax = create_norm(df=group, ref_col="avg")
+            facet = get_facet(df=group, tiles=background, vmin=vmin, vmax=vmax, plot_opts=plot_opts)
+            facet_list.append(facet)
+
+        else:
+            dum = group.copy()
+            dum["avg"] = dum["avg"].apply(lambda x: bins(x))
+            # create a dictionary mapping values to labels
+            label_dict = dict([(i, s) for i, s in enumerate(bins.get_legend_classes())])
+            if nbr_of_dec is not None:
+                dum["avg"] = dum["avg"].round(nbr_of_dec)
+            # if not normalize:
+            #     _, vmin, vmax = create_norm(df=dum, ref_col="avg")
+            facet = get_facet(df=dum, tiles=background, vmin=None, vmax=None, plot_opts=plot_opts, cbar_labels=label_dict)
+            facet_list.append(facet)
+            
+    hvl = (
+        hv.Layout(facet_list)
+        .opts(opts.Tiles(width=figsize[0], height=figsize[1]))
+        .cols(ncols)
+    )
+    return hvl
+
+
+def spatial_average_facetplot_interactive(options: PlotOptions) -> mpl.figure.Figure:
+    """
+    Create a facet plot of spatial data on a map.
+
+    Parameters
+    ----------
+    options : PlotOptions
+        An object containing the options for the plot.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        The figure object containing the plot.
+
+    Raises
+    ------
+    TypeError
+        If the shapefile is not a GeoDataFrame.
+
+    Notes
+    -----
+    This function uses the following helper functions: `dark_or_light_color()`, `dissolve_and_aggregate()`,
+    `calculate_bins_grouped_data()`, and `plot_grouped_data()`.
+    """
+    # Validate the shapefile
+    if not isinstance(options.shp_file, gpd.geodataframe.GeoDataFrame):
+        raise TypeError("The shapefile should be a GeoDataFrame")
+
+    # Load the data and dissolve
+    geo_df = dissolve_and_aggregate(
+        df=options.df,
+        target=options.target,
+        other_cols_avg=options.other_cols_avg,
+        dissolve_on=options.dissolve_on,
+        geoid=options.geoid,
+        weight=options.weight,
+        shp_file=options.shp_file,
+        distr=options.distr,
+    )
+
+    # Fillna with 0 for the specified columns
+    geo_df["avg"] = geo_df["avg"].fillna(0).values
+    grouped = geo_df.groupby("model")
+
+    bins_dict = calculate_bins_grouped_data(
+        grouped=grouped,
+        autobin=options.autobin,
+        n_bins=options.n_bins,
+        normalize=options.normalize,
+    )
+    
+    hvl = plot_grouped_data_interactive(
+        grouped=grouped,
+        ncols=options.ncols,
+        bins_dict=bins_dict,
+        cmap=options.cmap,
+        alpha=options.alpha,
+        nbr_of_dec=options.nbr_of_dec,
+        background=options.background,
+        figsize=options.figsize,
+        normalize=options.normalize)
+
+    return hvl
+
+def apply_binning(s, bins):
+    return pd.cut(s.fillna(0), bins=bins).apply(lambda x: find_center(x)).astype(float)
+
+def find_center(x):
+    if (np.isfinite(x.left) & np.isfinite(x.right)):
+        return x.mid
+    elif np.isfinite(x.left):
+        return x.left
+    elif np.isfinite(x.right):
+        return x.right
+    else:
+        return x.mid
+
