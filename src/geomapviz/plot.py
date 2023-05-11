@@ -5,14 +5,13 @@ Module for geographical visualization (geomapviz)
 from __future__ import print_function
 from os.path import dirname, join
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from typing import Optional, Union, Tuple, List, Dict, Literal
+from typing import Optional, Union, Tuple, List, Dict
 
 # pandas
 import pandas as pd
 import geopandas as gpd
 from mapclassify import FisherJenks
 from dataclasses import dataclass
-from pandas.api.types import CategoricalDtype
 
 # numpy
 import numpy as np
@@ -39,7 +38,6 @@ sns.set(style="ticks")
 __all__ = [
     "spatial_average_plot",
     "spatial_average_facetplot",
-    "spatial_average_facetplot_interactive",
 ]
 
 def dark_or_light_color(color: str):
@@ -784,7 +782,37 @@ def get_tiles(tiles_src: Optional[str]) -> hv.element.tiles:
 
     return hv.element.tiles.tile_sources[tiles_src]()
 
-def get_interactive_plot_options(col,cmap, alpha):
+def get_interactive_plot_options(col:str, cmap: Union[str, mpl.colors.Colormap], alpha:float):
+    """
+    Returns a dictionary of options for an interactive plot.
+
+    Parameters
+    ----------
+    col : 
+        The name of the column to plot.
+    cmap : 
+        The colormap to use for the plot.
+    alpha :
+        The opacity of the plot.
+
+    Returns
+    -------
+    dict
+        A dictionary of options for an interactive plot, including the following keys:
+        - 'tools': list of str, specifying the tools to include in the plot.
+        - 'width': int, specifying the width of the plot in pixels.
+        - 'height': int, specifying the height of the plot in pixels.
+        - 'color': geoviews.dim instance, specifying the column to use for coloring the plot.
+        - 'cmap': str or matplotlib.colors.Colormap, specifying the colormap to use.
+        - 'colorbar': bool, specifying whether to show a colorbar.
+        - 'toolbar': str, specifying the location of the toolbar.
+        - 'xaxis': None, to disable the x-axis.
+        - 'yaxis': None, to disable the y-axis.
+        - 'alpha': float, specifying the opacity of the plot.
+        - 'title': str, specifying the title of the plot.
+        - 'clipping_colors': dict, specifying colors to use for clipping values.
+
+    """
     return dict(
             tools=["hover"],
             width=550,
@@ -800,7 +828,32 @@ def get_interactive_plot_options(col,cmap, alpha):
             clipping_colors={"NaN": "white"},
         )
 
-def get_facet(df, tiles, vmin, vmax, plot_opts, cbar_labels=None):
+def get_facet(df: pd.DataFrame, tiles: hv.element.tiles, vmin: float, vmax: float, plot_opts: dict, 
+              cbar_labels: Optional[list] = None) -> hv.core.overlay.Layout:
+    """
+    Create a choropleth map from a DataFrame of polygon geometries and their corresponding data.
+
+    Parameters:
+    -----------
+    df : 
+        A DataFrame containing polygon geometries and their corresponding data.
+    tiles :
+        A GeoViews element specifying the map tiles to use as the background.
+    vmin : 
+        The minimum value to use for the color bar.
+    vmax : 
+        The maximum value to use for the color bar.
+    plot_opts :
+        A dictionary of options to pass to the GeoViews element for styling the map.
+    cbar_labels :
+        A list of labels for the color bar. If provided, the color bar will be discrete with the 
+        given labels as the major tick labels.
+
+    Returns:
+    --------
+    facet : gv.core.overlay.Element
+        A GeoViews element containing the choropleth map overlaid on the specified map tiles.
+    """
     polygons = gv.Polygons(df, vdims=[hv.Dimension("avg", range=(vmin, vmax))],  
                                 crs=ccrs.GOOGLE_MERCATOR).opts(**plot_opts)
     if cbar_labels:
@@ -893,82 +946,3 @@ def plot_grouped_data_interactive(
         .cols(ncols)
     )
     return hvl
-
-
-def spatial_average_facetplot_interactive(options: PlotOptions) -> mpl.figure.Figure:
-    """
-    Create a facet plot of spatial data on a map.
-
-    Parameters
-    ----------
-    options : PlotOptions
-        An object containing the options for the plot.
-
-    Returns
-    -------
-    matplotlib.figure.Figure
-        The figure object containing the plot.
-
-    Raises
-    ------
-    TypeError
-        If the shapefile is not a GeoDataFrame.
-
-    Notes
-    -----
-    This function uses the following helper functions: `dark_or_light_color()`, `dissolve_and_aggregate()`,
-    `calculate_bins_grouped_data()`, and `plot_grouped_data()`.
-    """
-    # Validate the shapefile
-    if not isinstance(options.shp_file, gpd.geodataframe.GeoDataFrame):
-        raise TypeError("The shapefile should be a GeoDataFrame")
-
-    # Load the data and dissolve
-    geo_df = dissolve_and_aggregate(
-        df=options.df,
-        target=options.target,
-        other_cols_avg=options.other_cols_avg,
-        dissolve_on=options.dissolve_on,
-        geoid=options.geoid,
-        weight=options.weight,
-        shp_file=options.shp_file,
-        distr=options.distr,
-    )
-
-    # Fillna with 0 for the specified columns
-    geo_df["avg"] = geo_df["avg"].fillna(0).values
-    grouped = geo_df.groupby("model")
-
-    bins_dict = calculate_bins_grouped_data(
-        grouped=grouped,
-        autobin=options.autobin,
-        n_bins=options.n_bins,
-        normalize=options.normalize,
-    )
-    
-    hvl = plot_grouped_data_interactive(
-        grouped=grouped,
-        ncols=options.ncols,
-        bins_dict=bins_dict,
-        cmap=options.cmap,
-        alpha=options.alpha,
-        nbr_of_dec=options.nbr_of_dec,
-        background=options.background,
-        figsize=options.figsize,
-        normalize=options.normalize)
-
-    return hvl
-
-def apply_binning(s, bins):
-    return pd.cut(s.fillna(0), bins=bins).apply(lambda x: find_center(x)).astype(float)
-
-def find_center(x):
-    if (np.isfinite(x.left) & np.isfinite(x.right)):
-        return x.mid
-    elif np.isfinite(x.left):
-        return x.left
-    elif np.isfinite(x.right):
-        return x.right
-    else:
-        return x.mid
-
