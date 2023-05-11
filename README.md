@@ -5,10 +5,22 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![PyPI version](https://img.shields.io/pypi/v/geomapviz?style=flat)](https://pypi.org/project/geomapviz/)
 
-# Geographical Visualization
+# 🗺️🐍 Geomapviz - Python Library for Beautiful and Interactive Geospatial Tabular Data Visualization 🚀
 
-Geomapviz is a Python package that allows for data visualization on maps with varying levels of granularity. The package aggregates data at specified geographical levels and can dissolve polygons as needed. Maps can be generated as either static using matplotlib or interactive using geoviews and holoviews. Geomapviz can produce a single map or a panel of maps, making it useful for comparing how different models capture geographical patterns. The package also supports returning average values either raw or automatically binned. Additionally, it allows users to customize the background color, including the option to switch from a black background to a light one.
+Geomapviz is a Python library for visualizing geospatial tabular data. It aggregates tabular data at the geoid level, merges it with the shapefile, and provides a simple API to plot the average for single or multiple columns. The library is designed to create beautiful and interactive visualizations that help users better understand geospatial data. Geomapviz can produce a single map or a panel of maps, making it useful for comparing how different models capture geographical patterns. The package also supports returning average values either raw or automatically binned. Additionally, it allows users to customize the background color, including the option to switch from a black background to a light one. The styling is handled by a DataClass, PlotOptions, object is used to specify various arguments for creating a geospatial plot of a dataset
 
+
+<table >
+  <tr>
+    <td align="left"><img src="pics/example.png" width="600"/></td>
+  </tr>
+</table>
+
+<table >
+  <tr>
+    <td align="left"><img src="pics/example2.png" width="600"/></td>
+  </tr>
+</table>
 
 ## Installation
 
@@ -18,149 +30,10 @@ Geomapviz is a Python package that allows for data visualization on maps with va
  - If you face a `cartopy` installation error, try to install first from pre-built binaries `conda install -c conda-forge cartopy`. For installing on Linux platform, some dependencies are required, see [the cartopy documentation](https://scitools.org.uk/cartopy/docs/latest/installing.html) for details.
  - If you face a geoviews installation error, try `conda install -c pyviz geoviews`
 
-# Applications
+## Documentation
 
-## Generate dummy data
-
-Introducing correlation to the geo identifier of regions
-
-```python
-import numpy as np
-import pandas as pd
-
-# geomapviz
-import geomapviz as gm
-# color maps, see the scicomap package as well
-import cmasher as cmr
-
-
-# the greatest country in the world,
-# first military and economic power in the Universe
-shp_file = gm.load_be_shp()
-geom_df = shp_file.copy()
-
-# create correlation with the geo entities
-feat_1 = np.repeat(np.log10(geom_df.INS.astype(int).values), 10)
-feat_1 = (feat_1 - feat_1.min()) / (feat_1.max() - feat_1.min())
-# dummy data
-X = (np.repeat(geom_df.long.values, 10) - (geom_df.long.mean())) / geom_df.long.std()
-Y = (np.repeat(geom_df.lat.values, 10) - (geom_df.lat.mean())) / geom_df.lat.std()
-
-# dummy data
-bel_df = pd.DataFrame({
-    'geoid': np.repeat(geom_df.INS.values, 10),
-    'truth': (1 - Y + X + Y**3) * np.exp(-(X**2 + Y**2)),
-    'feat_2':  (1 - Y**3 + X**3 + Y**5) * np.exp(-(X**2 + Y**2)) + np.random.beta(.5, .5, size=len(feat_1)),
-    'feat_3': (1 + Y*X+ Y**3) * np.exp(-(X**2 + Y**2)) + np.random.beta(.5, .5, size=len(feat_1)),
-    'feat_4': feat_1 + np.random.beta(5, 2, size=len(feat_1))
-}
-)
-
-bel_df = bel_df.merge(geom_df[['INS', 'borough', 'district']], left_on='geoid', right_on='INS')
-```
-
-## Simple choropleth
-
-```python
-f = gm.plot_on_map(df=bel_df, target='truth', geoid='INS', shp_file=shp_file,
-                   figsize=(20, 6), cmap=cmr.iceburn, normalize=True, facecolor="black")
-```
-
-<table >
-  <tr>
-    <td align="left"><img src="pics/be-rnd00.png" width="300"/></td>
-  </tr>
-</table>
-
-## Simple choropleth and incertitude on the average
-
-```python
-f = gm.plot_on_map(df=bel_df, target='truth', dissolve_on=None, distrib='gaussian',
-                   plot_uncertainty=True, plot_weight=False,
-                   autobin=False, n_bins=7, geoid='INS', weight=None, shp_file=shp_file,
-                   figsize=(20, 6), cmap=cmr.iceburn, normalize=True, facecolor="black")
-```
-
-<table >
-  <tr>
-    <td align="left"><img src="pics/be-rnd01.png" width="600"/></td>
-  </tr>
-</table>
-
-## Simple choropleth with auto-binning
-
-You can also choose the number of decimal in the legend.
-
-```python
-f = gm.plot_on_map(df=bel_df, target='truth', plot_uncertainty=True,
-                   autobin=True, n_bins=7, geoid='INS', weight=None, shp_file=shp_file,
-                   figsize=(20, 6), cmap=cmr.iceburn, normalize=True, facecolor="black", nbr_of_dec=3)
-```
-
-<table >
-  <tr>
-    <td align="left"><img src="pics/be-rnd02.png" width="600"/></td>
-  </tr>
-</table>
-
-
-## Panel of choropleths with auto-binning and dissolve polygons
-
-
-```python
-cols_pred = ['feat_2', 'feat_3', 'feat_4']
-f = gm.facet_map(df=bel_df, target='truth', cols_to_plot=cols_pred, dissolve_on='borough',
-                      autobin=True, n_bins=5, geoid='INS', shp_file=shp_file,
-                      figsize=(12, 12), ncols=2, normalize=False)
-```
-
-<table >
-  <tr>
-    <td align="left"><img src="pics/be-rnd04.png" width="600"/></td>
-  </tr>
-</table>
-
-
-## Interactive map
-
-Using geoviews behind the scene, geomapviz generates an interactive map. You can have non-binned or auto-binned
-average values, etc.
-
-```python
-f = gm.facet_map_interactive(df=bel_df, target='truth', cols_to_plot=None, predicted=None, dissolve_on=None,
-                             autobin=True, n_bins=7, geoid='INS', weight=None, shp_file=shp_file, alpha=.8,
-                             figsize=(400, 400), ncols=2, cmap=cmr.iceburn, normalize=False) #, tiles_src='Wikipedia')
-f
-```
-
-
-<table >
-  <tr>
-    <td align="left"><img src="pics/be-rnd05.png" width="300"/></td>
-  </tr>
-</table>
-
-## Interactive panel
-
-By passing column names , you will have an interactive panel chart with linked maps. You can change the
-source of the tiles if you want to, using the `tiles_src` argument.
-
-```python
-cols_pred = ['feat_2', 'feat_3', 'feat_4']
-f = gm.facet_map_interactive(df=bel_df, target='truth', cols_to_plot=cols_pred, predicted=None, dissolve_on=None,
-                             autobin=True, n_bins=7, geoid='INS', weight=None, shp_file=shp_file,
-                             figsize=(400, 400), ncols=2, cmap=None, normalize=False) #, tiles_src='Wikipedia')
-f
-```
-<table >
-  <tr>
-    <td align="left"><img src="pics/be-rnd06.png" width="600"/></td>
-  </tr>
-</table>
-
-
-
-# Changes
+The [documentation notebook](nb/geomap.ipynb) illustrates the functionality of `geomapviz`
+## Changes
 
 ### 0.6
 
