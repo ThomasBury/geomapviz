@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 version = {attr = "geomapviz.__version__"}
 
 [tool.setuptools]
-package-data = {"*" = ["**/*.gz", "**/*.dbf", "**/*.cpg", "**/*.shp", "**/*.shx", "**/*.tif"]}
+package-data = {"*" = ["**/*.gz", "**/*.dbf", "**/*.cpg", "**/*.shp", "**/*.shx", "**/*.prj", "**/*.qpj", "**/*.sld" ,"**/*.tif"]}
 
 [project]
 name = "geomapviz"
