@@ -398,7 +398,8 @@ def plot_data(
                     "framealpha": 0,
                     "loc": "lower left",
                     "fmt": "{:." + nbr_dec + "f}",
-                    "labelcolor": "gray",
+                    "labelcolor": "#575757",
+
                 },
             )
         if options.background:
@@ -643,7 +644,7 @@ def plot_grouped_data(
                     "framealpha": 0,
                     "loc": "lower left",
                     "fmt": "{:." + nbr_dec + "f}",
-                    "labelcolor": "gray",
+                    "labelcolor": "#575757",
                 },
             )
         if background:
