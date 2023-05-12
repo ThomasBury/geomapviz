@@ -55,9 +55,15 @@ def load_shp(country: str = "BE"):
     >>> belgium.plot()
     """
 
-    if country == "BE":
-        data_filename = resource_filename(__name__, "shp/belgium.shp")
+    shp_files = {
+        "BE": "belgium.shp",
+        "NL": "nl_pc4_2014.shp",
+        "IT": "italy_region.shp",
+    }
+
+    if country in shp_files:
+        data_filename = resource_filename(__name__, f"shp/{shp_files[country]}")
     else:
-        raise ValueError("The country must be one of ['BE']")
+        raise ValueError("The country must be one of ['BE', 'NL', 'IT']")
 
     return gpd.read_file(data_filename)
