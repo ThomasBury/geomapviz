@@ -599,7 +599,7 @@ def plot_grouped_data(
 
     for i, (name, group) in enumerate(grouped):
         ax = axs[i] if ncols > 1 else axs
-        bins = bins_dict[name].bins
+        bins = bins_dict[name]
         if bins is None:
             _, vmin, vmax = create_norm(df=group, ref_col="avg")
             # vmin, vmax = np.nanpercentile(group["avg"].fillna(0), [1, 99])
@@ -629,7 +629,7 @@ def plot_grouped_data(
                     norm=norm,
                 )
         else:
-            nbr_dec = set_decimal_precision(nbr_of_dec, bins=bins)
+            nbr_dec = set_decimal_precision(nbr_of_dec, bins=bins.bins)
             group.plot(
                 column="avg",
                 ax=ax,
@@ -638,7 +638,7 @@ def plot_grouped_data(
                 cmap=cmap,
                 scheme="user_defined",
                 alpha=alpha,
-                classification_kwds={"bins": bins},
+                classification_kwds={"bins": bins.bins},
                 legend_kwds={
                     "facecolor": facecolor,
                     "framealpha": 0,
