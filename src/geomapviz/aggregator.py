@@ -2,11 +2,7 @@ import numpy as np
 import pandas as pd
 import warnings
 import geopandas as gpd
-from typing import Optional, Union, Tuple, List, Dict, Literal
-from pandas.api.types import is_numeric_dtype
-
-
-from .utils import convert_category_to_code
+from typing import Optional, Union, Tuple, List
 from .utils import check_list_of_str
 
 

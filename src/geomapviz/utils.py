@@ -12,7 +12,7 @@ def check_list_of_str(str_list: List[str], name: str = "str_list") -> None:
     str_list :
 
     name :
-         (default ``'str_list'``)
+        (default ``'str_list'``)
 
     Raises
     ------
