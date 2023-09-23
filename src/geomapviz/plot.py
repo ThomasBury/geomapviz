@@ -3,7 +3,6 @@ Module for geographical visualization (geomapviz)
 """
 # Settings and libraries
 from __future__ import print_function
-from os.path import dirname, join
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from typing import Optional, Union, Tuple, List, Dict
 

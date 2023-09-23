@@ -1,10 +1,8 @@
 # Settings and libraries
 from __future__ import print_function
-from os.path import dirname, join
-from pkg_resources import resource_stream, resource_filename
+from pkg_resources import resource_filename
 from cartopy import crs
 # pandas
-import pandas as pd
 import geopandas as gpd
 
 

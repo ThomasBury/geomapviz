@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import warnings
 import geopandas as gpd
 from typing import Optional, Union, Tuple, List, Dict, Literal
 from pandas.api.types import is_numeric_dtype
@@ -28,16 +29,11 @@ def encode_categorical_columns(df: pd.DataFrame) -> pd.DataFrame:
     >>> import pandas as pd
     >>> from typing import List
     >>> df = pd.DataFrame({'A': pd.Categorical(['a', 'b', 'c', 'a'], categories=['a', 'b', 'c']),
-                           'B': pd.Categorical(['b', 'a', 'b', 'c'], categories=['a', 'b', 'c']),
-                           'C': [1, 2, 3, 4],
-                           'D': [5, 6, 7, 8]})
+    >>>                       'B': pd.Categorical(['b', 'a', 'b', 'c'], categories=['a', 'b', 'c']),
+    >>>                       'C': [1, 2, 3, 4],
+    >>>                       'D': [5, 6, 7, 8]})
     >>> encoded_df = encode_categorical_columns(df)
     >>> print(encoded_df)
-       A  B  C  D
-    0  0  1  1  5
-    1  1  0  2  6
-    2  2  1  3  7
-    3  0  2  4  8
     """
     cat_cols = df.select_dtypes("category").columns.tolist()
     if cat_cols:

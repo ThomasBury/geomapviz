@@ -1,8 +1,7 @@
 # Settings and libraries
 from __future__ import print_function
-import numpy as np
 import pandas as pd
-from typing import Union, Optional, Tuple, List
+from typing import List
 
 
 def check_list_of_str(str_list: List[str], name: str = "str_list") -> None:
