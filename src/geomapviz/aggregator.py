@@ -342,12 +342,10 @@ def merge_zip_df(
     (district name, sub-districts, etc.). The key is the `geoid` column.
     The zip mapper might be such as:
 
-    +----+---------+-------------+---------+---------+------------+-----------+-------------------+
     |    |   geoid | town        |     lat |    long |   postcode | district  | borough           |
-    +====+=========+=============+=========+=========+============+===========+===================+
     |  0 |   21004 | BRUSSEL     | 50.8333 | 4.35    |       1000 | Brussels  | Brussel Hoofdstad |
-    +----+---------+-------------+---------+---------+------------+-----------+-------------------+
     |  1 |   21015 | SCHAARBEEK  | 50.85   | 4.38333 |       1030 | Brussels  | Brussel Hoofdstad |
+
 
     Parameters
     ----------
