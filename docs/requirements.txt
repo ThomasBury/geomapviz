@@ -1,7 +1,11 @@
 holoviews>=1.14.8
+geoviews
 matplotlib>=3.5
 numpy>=1.21
 pandas>=1.4
+geopandas
+mapclassify
+contextily
 panel>=0.13
 scipy>=1.8.0
 seaborn>=0.11.2
