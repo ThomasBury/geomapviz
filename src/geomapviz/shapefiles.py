@@ -2,7 +2,7 @@
 from __future__ import print_function
 from os.path import dirname, join
 from pkg_resources import resource_stream, resource_filename
-
+from cartopy import crs
 # pandas
 import pandas as pd
 import geopandas as gpd
@@ -25,7 +25,7 @@ def load_geometry(shp_path: str, geoid: str = "INS") -> gpd.GeoDataFrame:
         The GeoDataFrame with the shapefile's geometry projected in Google Mercator and the geoid column cast to string.
     """
     geometries = gpd.read_file(shp_path)
-    geom_merc = geometries.to_crs(ccrs.GOOGLE_MERCATOR.proj4_init)
+    geom_merc = geometries.to_crs(crs.GOOGLE_MERCATOR.proj4_init)
     geom_merc[geoid] = geom_merc[geoid].astype(str)
     return geom_merc
 

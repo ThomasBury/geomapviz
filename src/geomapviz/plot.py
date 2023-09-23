@@ -35,11 +35,8 @@ hv.extension("bokeh", logo=False)
 hv.renderer("bokeh").theme = "light_minimal"
 sns.set(style="ticks")
 
-__all__ = [
-    "spatial_average_plot",
-    "spatial_average_facetplot",
-    "PlotOptions"
-]
+__all__ = ["spatial_average_plot", "spatial_average_facetplot", "PlotOptions"]
+
 
 def dark_or_light_color(color: str):
     """Determine whether a given color is light or dark.
@@ -143,16 +140,23 @@ def calculate_bins(
     """
     if cols_to_bin is None:
         cols_to_bin = []
-    
+
     bins_dict = {}
     for col in cols_to_bin:
         if autobin:
-            bins = FisherJenks(df[target].fillna(0), n_bins).bins if normalize else (
-                FisherJenks(df[col].fillna(0), n_bins).bins if df[col].nunique() > n_bins else None)
+            bins = (
+                FisherJenks(df[target].fillna(0), n_bins).bins
+                if normalize
+                else (
+                    FisherJenks(df[col].fillna(0), n_bins).bins
+                    if df[col].nunique() > n_bins
+                    else None
+                )
+            )
         else:
             bins = None
         bins_dict[col] = bins
-    
+
     return bins_dict
 
 
@@ -399,7 +403,6 @@ def plot_data(
                     "loc": "lower left",
                     "fmt": "{:." + nbr_dec + "f}",
                     "labelcolor": "#575757",
-
                 },
             )
         if options.background:
@@ -496,7 +499,10 @@ def spatial_average_plot(options: PlotOptions):
 
 
 def calculate_bins_grouped_data(
-    grouped: pd.core.groupby.DataFrameGroupBy, autobin: bool, n_bins: int, normalize: bool
+    grouped: pd.core.groupby.DataFrameGroupBy,
+    autobin: bool,
+    n_bins: int,
+    normalize: bool,
 ):
     """
     Calculates the bin ranges for a given DataFrame of model averages.
@@ -520,11 +526,7 @@ def calculate_bins_grouped_data(
     """
     bins_dict = {}
     target_df = grouped.get_group("target")
-    ref_bins = (
-        FisherJenks(target_df["avg"].fillna(0), n_bins)
-        if autobin
-        else None
-    )
+    ref_bins = FisherJenks(target_df["avg"].fillna(0), n_bins) if autobin else None
     for name, group in grouped:
         if autobin and normalize:
             bins_dict[name] = ref_bins
@@ -593,7 +595,7 @@ def plot_grouped_data(
     axs = axs.flatten() if ncols > 1 else axs
 
     target_df = grouped.get_group("target")
-    
+
     if normalize:
         norm, vmin, vmax = create_norm(df=target_df, ref_col="avg")
 
@@ -719,7 +721,7 @@ def spatial_average_facetplot(options: PlotOptions) -> mpl.figure.Figure:
     # Define the colormap
     cmap = options.cmap or "plasma"
     alpha = 1.0 if options.background is None else 0.65
-    
+
     grouped = geo_df.groupby("model")
 
     bins_dict = calculate_bins_grouped_data(
@@ -738,7 +740,8 @@ def spatial_average_facetplot(options: PlotOptions) -> mpl.figure.Figure:
             nbr_of_dec=options.nbr_of_dec,
             background=options.background,
             figsize=options.figsize,
-            normalize=options.normalize)
+            normalize=options.normalize,
+        )
     else:
         f = plot_grouped_data(
             grouped=grouped,
@@ -784,15 +787,18 @@ def get_tiles(tiles_src: Optional[str]) -> hv.element.tiles:
 
     return hv.element.tiles.tile_sources[tiles_src]()
 
-def get_interactive_plot_options(col:str, cmap: Union[str, mpl.colors.Colormap], alpha:float):
+
+def get_interactive_plot_options(
+    col: str, cmap: Union[str, mpl.colors.Colormap], alpha: float
+):
     """
     Returns a dictionary of options for an interactive plot.
 
     Parameters
     ----------
-    col : 
+    col :
         The name of the column to plot.
-    cmap : 
+    cmap :
         The colormap to use for the plot.
     alpha :
         The opacity of the plot.
@@ -816,39 +822,46 @@ def get_interactive_plot_options(col:str, cmap: Union[str, mpl.colors.Colormap],
 
     """
     return dict(
-            tools=["hover"],
-            width=550,
-            height=450,
-            color=gv.dim("avg"),
-            cmap=cmap,
-            colorbar=True,
-            toolbar="above",
-            xaxis=None,
-            yaxis=None,
-            alpha=alpha,
-            title=col,
-            clipping_colors={"NaN": "white"},
-        )
+        tools=["hover"],
+        width=550,
+        height=450,
+        color=gv.dim("avg"),
+        cmap=cmap,
+        colorbar=True,
+        toolbar="above",
+        xaxis=None,
+        yaxis=None,
+        alpha=alpha,
+        title=col,
+        clipping_colors={"NaN": "white"},
+    )
 
-def get_facet(df: pd.DataFrame, tiles: hv.element.tiles, vmin: float, vmax: float, plot_opts: dict, 
-              cbar_labels: Optional[list] = None) -> hv.core.overlay.Layout:
+
+def get_facet(
+    df: pd.DataFrame,
+    tiles: hv.element.tiles,
+    vmin: float,
+    vmax: float,
+    plot_opts: dict,
+    cbar_labels: Optional[list] = None,
+) -> hv.core.overlay.Layout:
     """
     Create a choropleth map from a DataFrame of polygon geometries and their corresponding data.
 
     Parameters:
     -----------
-    df : 
+    df :
         A DataFrame containing polygon geometries and their corresponding data.
     tiles :
         A GeoViews element specifying the map tiles to use as the background.
-    vmin : 
+    vmin :
         The minimum value to use for the color bar.
-    vmax : 
+    vmax :
         The maximum value to use for the color bar.
     plot_opts :
         A dictionary of options to pass to the GeoViews element for styling the map.
     cbar_labels :
-        A list of labels for the color bar. If provided, the color bar will be discrete with the 
+        A list of labels for the color bar. If provided, the color bar will be discrete with the
         given labels as the major tick labels.
 
     Returns:
@@ -856,12 +869,17 @@ def get_facet(df: pd.DataFrame, tiles: hv.element.tiles, vmin: float, vmax: floa
     facet : gv.core.overlay.Element
         A GeoViews element containing the choropleth map overlaid on the specified map tiles.
     """
-    polygons = gv.Polygons(df, vdims=[hv.Dimension("avg", range=(vmin, vmax))],  
-                                crs=ccrs.GOOGLE_MERCATOR).opts(**plot_opts)
+    polygons = gv.Polygons(
+        df, vdims=[hv.Dimension("avg", range=(vmin, vmax))], crs=ccrs.GOOGLE_MERCATOR
+    ).opts(**plot_opts)
     if cbar_labels:
-        polygons.opts(colorbar_opts={'major_label_overrides': cbar_labels}, color_levels=len(cbar_labels))
+        polygons.opts(
+            colorbar_opts={"major_label_overrides": cbar_labels},
+            color_levels=len(cbar_labels),
+        )
     facet = tiles * polygons
     return facet
+
 
 def plot_grouped_data_interactive(
     grouped: pd.core.groupby.DataFrameGroupBy,
@@ -912,22 +930,23 @@ def plot_grouped_data_interactive(
     """
 
     target_df = grouped.get_group("target")
-    
+
     if normalize:
         norm, vmin, vmax = create_norm(df=target_df, ref_col="avg")
 
     background = get_tiles(tiles_src=background)
     facet_list = []
-    
+
     for name, group in grouped:
-        
         plot_opts = get_interactive_plot_options(col=name, cmap=cmap, alpha=alpha)
 
         bins = bins_dict[name]
         if bins is None:
             if not normalize:
                 _, vmin, vmax = create_norm(df=group, ref_col="avg")
-            facet = get_facet(df=group, tiles=background, vmin=vmin, vmax=vmax, plot_opts=plot_opts)
+            facet = get_facet(
+                df=group, tiles=background, vmin=vmin, vmax=vmax, plot_opts=plot_opts
+            )
             facet_list.append(facet)
 
         else:
@@ -939,9 +958,16 @@ def plot_grouped_data_interactive(
                 dum["avg"] = dum["avg"].round(nbr_of_dec)
             # if not normalize:
             #     _, vmin, vmax = create_norm(df=dum, ref_col="avg")
-            facet = get_facet(df=dum, tiles=background, vmin=None, vmax=None, plot_opts=plot_opts, cbar_labels=label_dict)
+            facet = get_facet(
+                df=dum,
+                tiles=background,
+                vmin=None,
+                vmax=None,
+                plot_opts=plot_opts,
+                cbar_labels=label_dict,
+            )
             facet_list.append(facet)
-            
+
     hvl = (
         hv.Layout(facet_list)
         .opts(opts.Tiles(width=figsize[0], height=figsize[1]))
