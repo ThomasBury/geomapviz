@@ -1,334 +1,185 @@
+"""Validated pandas summaries; rendering is not required."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, List, Optional
+
 import numpy as np
 import pandas as pd
-import warnings
-import geopandas as gpd
-from typing import Optional, Union, Tuple, List
+
 from .utils import check_list_of_str
 
+if TYPE_CHECKING:
+    import geopandas as gpd
 
-def encode_categorical_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Encode categorical columns in the input DataFrame using the `.cat.codes` method.
-
-    Parameters
-    ----------
-    df :
-        Input DataFrame to encode categorical columns.
-
-    Returns
-    -------
-    pd.DataFrame
-        Returns a new DataFrame with categorical columns encoded.
-
-    Examples
-    --------
-    >>> import pandas as pd
-    >>> from typing import List
-    >>> df = pd.DataFrame({'A': pd.Categorical(['a', 'b', 'c', 'a'], categories=['a', 'b', 'c']),
-    >>>                       'B': pd.Categorical(['b', 'a', 'b', 'c'], categories=['a', 'b', 'c']),
-    >>>                       'C': [1, 2, 3, 4],
-    >>>                       'D': [5, 6, 7, 8]})
-    >>> encoded_df = encode_categorical_columns(df)
-    >>> print(encoded_df)
-    """
-    cat_cols = df.select_dtypes("category").columns.tolist()
-    if cat_cols:
-        for c in cat_cols:
-            df[c] = df[c].cat.codes
-    return df
+__all__ = ["aggregate_means", "aggregate_rates"]
 
 
-def prepare_dataframe(
+def _validate(df, geoid, metrics, weight):
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("df must be a pandas DataFrame")
+    if df.empty:
+        raise ValueError("df must contain at least one observation")
+    if not isinstance(geoid, str):
+        raise TypeError("geoid must be a column name")
+    check_list_of_str(metrics, "metrics")
+    if not metrics or len(set(metrics)) != len(metrics):
+        raise ValueError("metrics must be a non-empty list of unique column names")
+    if weight is not None and not isinstance(weight, str):
+        raise TypeError("weight must be a column name or None")
+    if geoid in metrics or geoid == weight:
+        raise ValueError(f"Geographic ID column {geoid!r} cannot be a metric or weight")
+    if not df.columns.is_unique:
+        raise ValueError("df must have unique column names")
+    selected = list(
+        dict.fromkeys([geoid] + metrics + ([weight] if weight is not None else []))
+    )
+    missing = [name for name in selected if name not in df.columns]
+    if missing:
+        raise ValueError(f"Missing columns: {missing}")
+    if df[geoid].isna().any():
+        raise ValueError(f"Geographic ID column {geoid!r} contains missing IDs")
+    numbers = {}
+    for name in selected[1:]:
+        series = df[name]
+        if not pd.api.types.is_numeric_dtype(series) or pd.api.types.is_complex_dtype(
+            series
+        ):
+            raise TypeError(f"Column {name!r} must contain real numeric values")
+        values = series.to_numpy(dtype=float, na_value=np.nan)
+        if not np.isfinite(values).all():
+            raise ValueError(f"Column {name!r} contains missing or non-finite values")
+        numbers[name] = values
+    values = pd.DataFrame({name: numbers[name] for name in metrics}, index=df.index)
+    weights = pd.Series(numbers[weight] if weight is not None else 1.0, index=df.index)
+    if (weights < 0).any():
+        raise ValueError(f"Weight column {weight!r} contains negative values")
+    return values, weights
+
+
+def _totals(df, geoid, metrics, weight, total_metric=None):
+    values, weights = _validate(df, geoid, metrics, weight)
+    grouping = dict(observed=True, sort=False)
+    total_weight = weights.groupby(df[geoid], **grouping).sum()
+    unsupported = total_weight.index[total_weight <= 0].tolist()
+    if unsupported:
+        raise ValueError(f"Areas with no positive total weight: {unsupported}")
+    if not np.isfinite(total_weight.to_numpy()).all():
+        raise ValueError(f"Weight column {weight!r} overflows during aggregation")
+    counts = (weights > 0).groupby(df[geoid], **grouping).sum()
+    with np.errstate(over="ignore", invalid="ignore"):
+        numerators = values.mul(weights, axis=0)
+    if total_metric is not None:
+        numerators[total_metric] = values[total_metric].where(weights > 0, 0)
+    if not np.isfinite(numerators.to_numpy()).all():
+        raise ValueError("Weighted metric values overflow during aggregation")
+    totals = numerators.groupby(df[geoid], **grouping).sum()
+    if not np.isfinite(totals.to_numpy()).all():
+        raise ValueError("Metric totals overflow during aggregation")
+    return totals, total_weight, counts
+
+
+def _add_column(result, name, values):
+    """Append underscores until a derived name cannot overwrite caller columns."""
+    while name in result.columns:
+        name += "_"
+    result[name] = values
+    return name
+
+
+def _summary(totals, total_weight, counts):
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        means = totals.div(total_weight, axis=0)
+    if not np.isfinite(means.to_numpy()).all():
+        raise ValueError("Aggregate rates or means overflow")
+    result = means.reset_index()
+    result.attrs["support"] = {
+        "count": _add_column(result, "support_count", counts.to_numpy()),
+        "weight": _add_column(result, "total_weight", total_weight.to_numpy()),
+    }
+    return result
+
+
+def aggregate_means(
     df: pd.DataFrame,
-    groups: Union[List[str], str],
-    target: str,
-    other_cols_avg: Optional[List[str]] = None,
-    weight: Optional[str] = None,
-    verb: int = 0,
-    distr: str = "gaussian",
+    geoid: str,
+    metrics: list[str],
+    weight: str | None = None,
 ) -> pd.DataFrame:
+    """Return named means by geographic ID, using one common finite cohort.
+
+    Weights must be finite and non-negative. Zero weights contribute neither
+    to the numerator nor the support count; every observed area must have
+    positive total weight. Without a weight column, all records have weight 1.
+    Missing/non-finite metrics are rejected even on zero-weight records:
+    callers must select their comparison cohort explicitly.
+
+    IDs (including categorical labels) and metric names are preserved. Support
+    columns start at ``support_count`` and ``total_weight``; collisions append
+    underscores. ``result.attrs['support']`` maps count/weight to actual names.
+    No statistical intervals are computed. Caller data is never changed.
     """
-    Prepare dataframe for the confidence interval computation.
-
-    Parameters
-    ----------
-    df :
-        Input data.
-    groups :
-        List of column names containing the groups of interest.
-    target :
-        Name of the target column.
-    other_cols_avg :
-        Other columns to average, such as the predicted values of a model
-    weight :
-        Name of the weight column. Default is None.
-    verb :
-        Controls the verbosity of the warning message. Default is 0.
-    distr :
-        Name of the distribution. Default is "gaussian".
-
-    Returns
-    -------
-    pd.DataFrame
-        Prepared dataframe.
-
-    Notes
-    -----
-    If weight is None, a weight column is added and set to 1.
-    If the distribution is not Gaussian and the weight is not provided, a warning message is raised.
-    """
-    if isinstance(groups, str):
-        groups = [groups]
-
-    check_list_of_str(groups)
-    check_list_of_str(other_cols_avg)
-
-    if other_cols_avg is None:
-        other_cols_avg = []
-
-    if weight is None:
-        weight = "weight"
-        df_ = df[groups + other_cols_avg + [target]].copy()
-        df_[weight] = 1
-        if verb > 0 and distr != "gaussian":
-            warnings.warn(
-                "Weight not provided, using the Gaussian approx for "
-                "the CI. For the Poisson or Gamma ci, please provide weights (exposure or ncl)"
-            )
-    else:
-        df_ = df[groups + other_cols_avg + [weight, target]].copy()
-
-    # to count rows for each level
-    df_["count"] = 1
-
-    df_ = encode_categorical_columns(df_)
-
-    # for convenience and less complexity through the different function
-    # let's rename the columns
-    df_ = df_.rename(columns={target: "target", weight: "weight"})
-
-    return df_
+    return _summary(*_totals(df, geoid, metrics, weight))
 
 
-def compute_weighted_average(
+def aggregate_rates(
     df: pd.DataFrame,
-    groups: Union[str, List[str]],
-    target: str = "target",
-    weight: str = "weight",
-    other_cols_avg: Optional[List[str]] = None,
-):
-    """compute_weighted_average computes the weighted arithmetic average, grouped by the column `group`.
-    The weighted average is :math: `\sum_{i} w_{i} x_{i} / \sum_{i} w_{i}`
-    If the weight is None, it computes the arithmetic average without weights :math: `\sum_{i} x_{i} / N`
+    geoid: str,
+    observed: str,
+    predicted: list[str],
+    exposure: str,
+    *,
+    observed_kind: str = "total",
+) -> pd.DataFrame:
+    """Compare observed totals or rates with exposure-weighted predicted rates.
 
-    Parameters
-    ----------
-    df :
-        the data set
-    groups :
-        the predictor(s) to group by
-    target :
-        the name of the observed/target column
-    weight :
-        the name of the column weight
-    other_cols_avg :
-        Other columns to average, such as the predicted values of a model
-    Returns
-    -------
-    pd.DataFrame
-        the dataframe with the arithmetic average, by group
+    ``observed_kind='total'`` sums observed amounts once and divides by summed
+    exposure. ``'rate'`` weights existing observed rates by exposure, just like
+    predictions. Zero-exposure rows are excluded from totals and support.
+    The original metric names contain aggregate rates in the returned frame.
+
+    Additional columns contain observed/expected totals, signed observed minus
+    predicted rate differences, and observed/expected total ratios. An expected
+    total of zero yields NaN. Derived names append underscores on collision;
+    ``attrs['totals']`` maps each metric to its total column and
+    ``attrs['comparisons']`` maps each prediction to difference/ratio columns.
+    Support and validation follow ``aggregate_means``; exposure is required.
     """
-
-    # the weighted avg is sum(x_i * w_i) / sum(w_i * w_j)
-    # this is the numerator
-    df[target] = df[target] * df[weight]
-
-    # check if str --> make a list
-    if isinstance(groups, str):
-        groups = [groups]
-
-    check_list_of_str(groups)
-
-    if other_cols_avg is None:
-        df = (
-            df.groupby(groups)[[weight, target, "count"]]
-            .sum()
-            .reset_index()
-            .assign(target=lambda x: x[target] / x[weight])
-        )
-        return df
-    else:
-        df[other_cols_avg] = df[other_cols_avg].values * np.expand_dims(
-            df[weight].values, axis=-1
-        )
-        keep_cols = other_cols_avg + [target, weight, "count"]
-
-        df = (
-            df.groupby(groups)[keep_cols]
-            .sum()
-            .reset_index()
-            .assign(target=lambda x: x[target] / x[weight])
-        )
-        df[other_cols_avg] = df[other_cols_avg].values / np.expand_dims(
-            df[weight].values, axis=-1
-        )
-
-        return df
-
-
-def compute_confidence_interval(
-    df: pd.DataFrame,
-    groups: Union[str, List[str]],
-    target: str = "target",
-    weight: str = "weight",
-    other_cols_avg: Optional[List[str]] = None,
-    distr: str = "gaussian",
-    n_std: float = 2.0,
-):
-    # check if str --> make a list
-    if isinstance(groups, str):
-        groups = [groups]
-
-    check_list_of_str(groups)
-    selected_cols = groups + [target, weight, "count"]
-
-    # update the list of selected columns if predictions are included
-    if other_cols_avg:
-        selected_cols = list(set(selected_cols).union(set(other_cols_avg)))
-
-    df_long = pd.melt(
-        df[selected_cols].copy(),
-        id_vars=groups + [weight, "count"],
-        var_name="model",
-        value_name="avg",
+    if not isinstance(observed, str) or not isinstance(exposure, str):
+        raise TypeError("observed and exposure must be column names")
+    check_list_of_str(predicted, "predicted")
+    if not predicted:
+        raise ValueError("predicted must be a non-empty list of rate column names")
+    if observed_kind not in ("total", "rate"):
+        raise ValueError("observed_kind must be 'total' or 'rate'")
+    metrics = [observed] + predicted
+    if exposure in metrics:
+        raise ValueError("exposure must be distinct from observed/predicted metrics")
+    totals, total_weight, counts = _totals(
+        df, geoid, metrics, exposure, observed if observed_kind == "total" else None
     )
-
-    if distr == "poisson":
-        df_long["target_std"] = np.sqrt(df_long["avg"] / df_long[weight])
-    elif distr == "gamma":
-        df_long["target_std"] = df_long["avg"] * np.sqrt(1 / df_long[weight])
-    elif distr == "gaussian":
-        df_long["target_std"] = df_long["avg"] * np.sqrt(1 / df_long["count"])
-    else:
-        warnings.warn(
-            'distr is not in ["poisson", "gamma", "gaussian"], using Gaussian approx. for the conf. int.'
-        )
-        df_long["target_std"] = df_long["avg"] * np.sqrt(1 / df_long["count"])
-
-    df_long["ci_low"] = df_long["avg"] - n_std * df_long["target_std"]
-    df_long["ci_low"] = df_long["ci_low"].clip(lower=0)
-    df_long["ci_up"] = df_long["avg"] + n_std * df_long["target_std"]
-    upper_bound = df_long["ci_up"].quantile(0.999)
-    df_long["ci_up"] = df_long["ci_up"].clip(upper=upper_bound)
-    df_long = df_long.reset_index()[
-        ["model"] + groups + ["avg", "ci_low", "ci_up", weight, "count"]
-    ]
-    return df_long
-
-
-def weighted_average_aggregator(
-    df: pd.DataFrame,
-    groups: Union[str, List[str]],
-    target: str,
-    other_cols_avg: Optional[List[str]] = None,
-    distr: str = "gaussian",
-    weight: str = None,
-    verb: int = 0,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """
-    Computes the weighted average and the confidence interval of a target variable
-    in a Pandas DataFrame, grouped by one or more categorical columns.
-
-    Parameters
-    ----------
-    df :
-        The input DataFrame to compute the weighted average and confidence interval on.
-    groups :
-        The name(s) of the column(s) in `df` that define the groups to aggregate.
-        If `groups` is a string, it will be interpreted as a single group column name.
-        If `groups` is a list of strings, it will be interpreted as multiple group column names.
-    target :
-        The name of the column in `df` that contains the target variable to aggregate.
-    other_cols_avg :
-        The predicted values of the target variable to use for computing the confidence interval
-        or any other columns to average.
-        If `other_cols_avg` is not None, it should be a list of column names.
-    distr :
-        The distribution to use for computing the confidence interval.
-        Supported distributions are 'gaussian' (default), 't' and 'bootstrap'.
-    weight :
-        The name of the column in `df` that contains the weights to use for computing the weighted average.
-        If `weight` is None (default), all rows are assumed to have equal weight.
-    verb :
-        Verbosity level of the function (0: no message, 1: info, 2: debug).
-        The default is 0.
-
-    Returns
-    -------
-    Tuple[pandas.DataFrame, pandas.DataFrame]
-        A tuple of two DataFrames:
-        - The first DataFrame contains the weighted average and the number of observations per group.
-        - The second DataFrame contains the confidence interval of the weighted average, computed at 95% confidence level.
-
-    Raises
-    ------
-    ValueError
-        If any of the input arguments is invalid.
-
-    Examples
-    --------
-    >>> import pandas as pd
-    >>> from my_module import weighted_average_aggregator
-    >>> data = pd.DataFrame({'color': ['red', 'green', 'red', 'green', 'green'],
-    ...                      'size': ['small', 'large', 'medium', 'large', 'small'],
-    ...                      'price': [1.0, 2.0, 3.0, 4.0, 5.0]})
-    >>> groups = ['color', 'size']
-    >>> target = 'price'
-    >>> weights = 'weights'
-    >>> data[weights] = [1, 2, 3, 4, 5]
-    >>> result, conf = weighted_average_aggregator(df=data, groups=groups, target=target, weight=weights)
-    """
-
-    # check if str --> make a list
-    if isinstance(groups, str):
-        groups = [groups]
-
-    check_list_of_str(groups)
-
-    df_ = prepare_dataframe(
-        df=df,
-        groups=groups,
-        target=target,
-        other_cols_avg=other_cols_avg,
-        weight=weight,
-        verb=verb,
-        distr=distr,
-    )
-
-    df_ = encode_categorical_columns(df_)
-
-    # for convenience and less complexity through the different function
-    # let's rename the columns
-    df_ = df_.rename(columns={target: "target", weight: "weight"})
-
-    df_ = compute_weighted_average(
-        df=df_,
-        groups=groups,
-        other_cols_avg=other_cols_avg,
-        weight="weight",
-        target="target",
-    )
-    df_long = compute_confidence_interval(
-        df=df_,
-        groups=groups,
-        other_cols_avg=other_cols_avg,
-        distr=distr,
-        n_std=2.0,
-        weight="weight",
-        target="target",
-    )
-
-    return df_, df_long
+    result = _summary(totals, total_weight, counts)
+    result.attrs["observed_kind"] = observed_kind
+    result.attrs["totals"] = {
+        metric: _add_column(result, f"{metric}_total", totals[metric].to_numpy())
+        for metric in metrics
+    }
+    comparisons = {}
+    for model in predicted:
+        with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+            difference = result[observed] - result[model]
+            ratio = totals[observed] / totals[model].where(totals[model] != 0)
+        if (
+            not np.isfinite(difference.to_numpy()).all()
+            or np.isinf(ratio.to_numpy()).any()
+        ):
+            raise ValueError(f"Comparison with {model!r} overflows")
+        comparisons[model] = {
+            "difference": _add_column(result, f"{model}_difference", difference),
+            "ratio": _add_column(result, f"{model}_ratio", ratio.to_numpy()),
+        }
+    result.attrs["comparisons"] = comparisons
+    return result
 
 
 def merge_zip_df(
@@ -390,80 +241,36 @@ def merge_zip_df(
 def dissolve_and_aggregate(
     df: pd.DataFrame,
     target: str,
-    other_cols_avg: Optional[List[str]] = None,
-    dissolve_on: Optional[List[str]] = None,
-    distr: str = "gaussian",
+    other_cols_avg: list[str] | None = None,
+    dissolve_on: str | None = None,
     geoid: str = "INS",
-    weight: Optional[List[str]] = None,
-    shp_file: Union[gpd.geodataframe.GeoDataFrame, None] = None,
+    weight: str | None = None,
+    shp_file: gpd.GeoDataFrame | None = None,
 ) -> gpd.GeoDataFrame:
-    """
-    Dissolves a GeoDataFrame based on a column, and aggregates data based on the
-    dissolved polygons.
+    """Feed the retained mean renderer; geography validation follows in M3."""
+    import geopandas as gpd
 
-    Parameters
-    ----------
-    df :
-        Dataframe with the data to be aggregated.
-    cols_to_plot :
-        List of columns to plot on map.
-    target :
-        Column with the target variable.
-    other_cols_avg :
-        Columns with the predicted values or any other columns to average.
-    distr :
-        Distribution of the target variable, by default "gaussian".
-    weight :
-        Column with the weights to be used, by default None.
-    dissolve_on :
-        Column to dissolve the GeoDataFrame, by default None.
-    geoid :
-        Column with the geoid, by default "geoid".
-    shp_file :
-        The shapefile to use for the map, as a GeoDataFrame. The default is None.
-
-    Returns
-    -------
-    geopandas.GeoDataFrame
-        geodataframe with the dissolved polygons.
-    """
-    # sanity checks
-
-    if not isinstance(shp_file, gpd.geodataframe.GeoDataFrame):
+    if not isinstance(shp_file, gpd.GeoDataFrame):
         raise TypeError("The shapefile should be a GeoDataFrame")
-
-    geom_merc = shp_file.copy()
-
-    if other_cols_avg and not isinstance(other_cols_avg, list):
-        raise TypeError("'other_cols_avg' should be a list of strings or None")
-
-    if dissolve_on:
-        if dissolve_on not in df.columns:
-            raise KeyError(f"{dissolve_on} is not a column in df")
-        groups = dissolve_on
-    else:
-        groups = geoid
-
-    df_, df_long = weighted_average_aggregator(
-        df=df,
-        groups=groups,
-        target=target,
-        other_cols_avg=other_cols_avg,
-        distr=distr,
-        weight=weight,
+    check_list_of_str(other_cols_avg, "other_cols_avg")
+    groups = dissolve_on or geoid
+    metrics = [target] + (other_cols_avg or [])
+    summary = aggregate_means(df, groups, metrics, weight)
+    support = summary.attrs["support"]
+    # ponytail: legacy long-format renderer; replace with prepared summaries in M4.
+    if groups in {"model", "avg", "count", "weight"}:
+        raise ValueError(f"Legacy renderer reserves geographic ID name {groups!r}")
+    long = (
+        summary.set_index([groups, support["count"], support["weight"]])[metrics]
+        .rename_axis(columns="model")
+        .stack()
+        .rename("avg")
+        .reset_index()
+        .rename(columns={support["count"]: "count", support["weight"]: "weight"})
     )
-
+    geometry = shp_file.copy()
     if dissolve_on:
-        geo_df = geom_merc.dissolve(by=dissolve_on).reset_index()
-        merge_key = dissolve_on
-    else:
-        geo_df = geom_merc.reset_index()
-        merge_key = geoid
-
-    df_long = df_long.fillna(0)
-    df_[merge_key] = df_[merge_key].astype(str)
-    geo_df[merge_key] = geo_df[merge_key].astype(str)
-
-    geo_df = geo_df.merge(df_long, left_on=merge_key, right_on=merge_key, how="left")
-
-    return gpd.GeoDataFrame(geo_df)
+        geometry = geometry.dissolve(by=dissolve_on).reset_index()
+    long[groups] = long[groups].astype(str)
+    geometry[groups] = geometry[groups].astype(str)
+    return geometry.merge(long, on=groups, how="left")

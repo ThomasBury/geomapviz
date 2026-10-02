@@ -92,3 +92,94 @@ Capability references refreshed with Context7 and official sources on 2026-10-02
 GeoPandas dissolve defaults to the first attribute value; totals/weights must
 be summed explicitly before deriving parent-area rates, rather than averaging
 already aggregated rates.
+
+## M2 — complete: numerical contract
+
+Development version is `2.0.0.dev0`, with Python minimum 3.12. The setuptools
+backend and dynamic version source are retained. Public numerical operations
+import only pandas/NumPy and return ordinary DataFrames:
+
+```python
+import pandas as pd
+from geomapviz import aggregate_means, aggregate_rates
+
+records = pd.DataFrame({
+    "area": ["001", "001"],
+    "loss": [10.0, 30.0],
+    "prediction": [8.0, 12.0],
+    "exposure": [1.0, 3.0],
+})
+comparison = aggregate_rates(
+    records, geoid="area", observed="loss", predicted=["prediction"],
+    exposure="exposure", observed_kind="total",
+)
+assert comparison.loc[0, "loss"] == 10.0       # 40 / 4
+assert comparison.loc[0, "prediction"] == 11.0  # (8 * 1 + 12 * 3) / 4
+assert comparison.loc[0, "loss_total"] == 40.0
+assert comparison.loc[0, "prediction_total"] == 44.0
+assert comparison.loc[0, "prediction_difference"] == -1.0
+
+means = aggregate_means(records, "area", ["prediction"], weight="exposure")
+assert means.loc[0, "prediction"] == 11.0
+```
+
+`aggregate_means` uses equal weights when `weight=None`. `aggregate_rates`
+defaults to observed totals; set `observed_kind="rate"` for existing observed
+rates. Prediction columns always contain rates. Results retain the original
+metric names for aggregate means/rates and expose totals separately, preventing
+double exposure weighting. Differences are observed minus predicted rates;
+ratios divide compatible observed/expected totals and are NaN for zero expected.
+
+Both operations reject empty input, missing IDs, missing/non-finite metrics,
+negative/non-finite weights, duplicate column/metric names, and groups with no
+positive weight. Invalid zero-weight records are still rejected: filtering the
+common cohort is the caller's explicit responsibility. Valid zero-weight rows
+contribute to neither means, totals, nor support counts. Overflow is rejected
+instead of returning infinite summaries. IDs retain their labels and dtype,
+including categorical labels, leading zeros, and numeric identifiers. Only
+observed categories produce groups, and inputs are unchanged.
+
+Support columns default to `support_count` and `total_weight`; derived total,
+difference and ratio columns use the names shown above. On collision, underscores
+are appended until unique. Inspect `summary.attrs["support"]`,
+`comparison.attrs["totals"]`, and `comparison.attrs["comparisons"]` for the
+actual names. These mappings are DataFrame metadata; formats such as CSV do not
+persist them, so capture them before exporting when names collide.
+
+Breaking changes: removed `prepare_dataframe`, categorical encoding in
+aggregation, `compute_weighted_average`, `weighted_average_aggregator`, and
+`compute_confidence_interval`. There is no tuple/interval output, `distr`, or
+`PlotOptions.plot_uncertainty`. Use the two public operations above rather than
+the renamed `target` column. No compatibility shims were added.
+
+Existing mean-rendering callers now consume the new numerical results and use
+the actual observed metric label. GeoPandas loads only inside the legacy geometry
+helper. A small synthetic rendering check exercises both single and facet maps,
+including metrics literally named `avg` and `count`, and verifies the prepared
+17.5 mean and absence of interval columns. This caller adaptation does not
+complete M3/M4: legacy geometry coverage/parent mappings, interactive CRS handling,
+layout options, shared scales, opacity and import-style side effects still need
+their planned work. The legacy renderer temporarily reserves ID names `model`,
+`avg`, `count`, and `weight`; the numerical API has no such restriction. The
+unrelated legacy CSV mapping helper remains unchanged for later cleanup.
+
+Verification:
+
+- CPython 3.12.7 with the full baseline stack: `python -m pytest -q` — 22 pass.
+- CPython 3.14.7 with only NumPy 2.5.3, pandas 3.0.6 and pytest 9.1.1:
+  `python -m pytest -q tests/test_aggregation.py` — 20 pass. Installed the project
+  editable with `--no-deps`; Matplotlib, GeoPandas, HoloViews and GeoViews are absent.
+  This verifies numerical independence, not the base installation promised by M5.
+- A fresh subprocess verifies importing and using both public functions does not
+  load any rendering stack. Numerical values match the independent M1 baseline.
+- Black with target Python 3.12 passes on changed source, tests and the M1 example.
+  Flake8 passes on those files with `--extend-ignore E501`, retaining the project's
+  Black line-length convention. No lint configuration or tool migration was added.
+- M1 synthetic static/interactive exports and assertions still pass. The known
+  Cartopy 0.26/GeoViews incompatibility remains recorded above.
+- `git diff --check` passes. Whole-repository formatting/lint failures in untouched
+  legacy files remain baseline work, not hidden by this focused check.
+
+M0–M2 are delivered as separate local Conventional Commits. PRD.md remains the
+user-supplied untracked file; M3–M6, publication, CI/CD and site documentation
+remain pending.

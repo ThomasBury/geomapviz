@@ -1,6 +1,7 @@
 """
 Module for geographical visualization (geomapviz)
 """
+
 # Settings and libraries
 from __future__ import print_function
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -28,7 +29,6 @@ from holoviews import opts
 import contextily as cx
 
 from .aggregator import dissolve_and_aggregate
-
 
 hv.extension("bokeh", logo=False)
 hv.renderer("bokeh").theme = "light_minimal"
@@ -228,10 +228,10 @@ class PlotOptions:
         The pandas DataFrame containing the data to plot.
     target : str
         The column name of the target variable to plot.
-    other_cols_avg : Optional[str], optional
+    other_cols_avg : Optional[List[str]], optional
         The column name of other columns in the dataframe to be averaged and plotted against the target variable, by default None.
-    weight : Optional[np.ndarray], optional
-        An array of weights for each observation, by default None.
+    weight : Optional[str], optional
+        Name of the weight column, by default None (equal weights).
     plot_weight : bool, optional
         A boolean flag indicating whether to plot the weights on the map, by default False.
     dissolve_on : Optional[str], optional
@@ -240,10 +240,6 @@ class PlotOptions:
         The name of the column containing the geographic ID, by default "nis".
     shp_file : Optional[gpd.geodataframe.GeoDataFrame], optional
         A GeoDataFrame containing the geometry data to plot, by default None.
-    distr : str, optional
-        The distribution type to use when calculating bin thresholds for the target variable, by default "gaussian".
-    plot_uncertainty : bool, optional
-        A boolean flag indicating whether to plot uncertainty bands around the target variable, by default False.
     background : Optional[str], optional
         The name of the background map to use, by default None.
     figsize : Tuple[float, float], optional
@@ -274,17 +270,14 @@ class PlotOptions:
     # data arguments
     df: pd.DataFrame
     target: str
-    other_cols_avg: Optional[str] = None
+    other_cols_avg: Optional[List[str]] = None
     # weights arguments
-    weight: Optional[np.ndarray] = None
+    weight: Optional[str] = None
     plot_weight: bool = False
     # geospatial arguments
     dissolve_on: Optional[str] = None
     geoid: str = "nis"
     shp_file: Optional[gpd.geodataframe.GeoDataFrame] = None
-    # uncertainty arguments
-    distr: str = "gaussian"
-    plot_uncertainty: bool = False
     # style arguments
     alpha: float = 0.5
     background: Optional[str] = None
@@ -340,8 +333,6 @@ def plot_data(
     """
 
     nrows = 1
-    if ncols == 4:
-        nrows, ncols = 2, 2
 
     f, axs = plt.subplots(
         ncols=ncols, nrows=nrows, figsize=options.figsize, facecolor=options.facecolor
@@ -407,9 +398,7 @@ def plot_data(
         if options.background:
             cx.add_basemap(ax, crs=df.crs, source=options.background)
         ax.set_axis_off()
-        ax.set_title(
-            "2 standard dev." if col == "2target_std" else col, color=title_col
-        )
+        ax.set_title(col, color=title_col)
 
     return f
 
@@ -427,9 +416,8 @@ def spatial_average_plot(options: PlotOptions):
     The `dissolve_on` and `geoid` parameters are used to
     group the data by geographic area. The `autobin`, `normalize`, and `n_bins`
     parameters control the binning of the data. The `cmap` parameter controls the colormap,
-    and the `facecolor` parameter controls the color of the plot background. The `plot_weight`
-    and `plot_uncertainty` parameters control whether to plot the weight and uncertainty data,
-    respectively. The resulting plot is returned as a matplotlib Figure object.
+    and the `facecolor` parameter controls the color of the plot background.
+    `plot_weight` includes support data. The result is a Matplotlib Figure.
 
     Parameters
     ----------
@@ -459,20 +447,17 @@ def spatial_average_plot(options: PlotOptions):
         geoid=options.geoid,
         weight=options.weight,
         shp_file=options.shp_file,
-        distr=options.distr,
     )
 
     # Define the colormap and the number of columns
     cmap = options.cmap or "plasma"
     alpha = 1.0 if options.background is None else 0.65
-    ncols = 1 + 2 * options.plot_uncertainty + options.plot_weight
+    ncols = 1 + options.plot_weight
 
     # Define the columns to plot and the corresponding bins for each column
     cols_to_enum = ["avg"]
     weight_name = ["count"] if options.weight is None else ["weight"]
 
-    if options.plot_uncertainty:
-        cols_to_enum += ["ci_low", "ci_up"]
     if options.plot_weight:
         cols_to_enum += weight_name
 
@@ -499,6 +484,7 @@ def spatial_average_plot(options: PlotOptions):
 
 def calculate_bins_grouped_data(
     grouped: pd.core.groupby.DataFrameGroupBy,
+    target: str,
     autobin: bool,
     n_bins: int,
     normalize: bool,
@@ -524,7 +510,7 @@ def calculate_bins_grouped_data(
         of bin ranges. If a model's value is None, no binning was performed for that model.
     """
     bins_dict = {}
-    target_df = grouped.get_group("target")
+    target_df = grouped.get_group(target)
     ref_bins = FisherJenks(target_df["avg"].fillna(0), n_bins) if autobin else None
     for name, group in grouped:
         if autobin and normalize:
@@ -538,6 +524,7 @@ def calculate_bins_grouped_data(
 
 def plot_grouped_data(
     grouped: pd.core.groupby.DataFrameGroupBy,
+    target: str,
     nrows: int,
     ncols: int,
     n_charts: int,
@@ -593,7 +580,7 @@ def plot_grouped_data(
     )
     axs = axs.flatten() if ncols > 1 else axs
 
-    target_df = grouped.get_group("target")
+    target_df = grouped.get_group(target)
 
     if normalize:
         norm, vmin, vmax = create_norm(df=target_df, ref_col="avg")
@@ -703,7 +690,6 @@ def spatial_average_facetplot(options: PlotOptions) -> mpl.figure.Figure:
         geoid=options.geoid,
         weight=options.weight,
         shp_file=options.shp_file,
-        distr=options.distr,
     )
 
     cols_to_plot = (
@@ -725,6 +711,7 @@ def spatial_average_facetplot(options: PlotOptions) -> mpl.figure.Figure:
 
     bins_dict = calculate_bins_grouped_data(
         grouped=grouped,
+        target=options.target,
         autobin=options.autobin,
         n_bins=options.n_bins,
         normalize=options.normalize,
@@ -732,6 +719,7 @@ def spatial_average_facetplot(options: PlotOptions) -> mpl.figure.Figure:
     if options.interactive:
         f = plot_grouped_data_interactive(
             grouped=grouped,
+            target=options.target,
             ncols=options.ncols,
             bins_dict=bins_dict,
             cmap=options.cmap,
@@ -744,6 +732,7 @@ def spatial_average_facetplot(options: PlotOptions) -> mpl.figure.Figure:
     else:
         f = plot_grouped_data(
             grouped=grouped,
+            target=options.target,
             nrows=nrows,
             ncols=options.ncols,
             n_charts=ncols_to_plot,
@@ -882,6 +871,7 @@ def get_facet(
 
 def plot_grouped_data_interactive(
     grouped: pd.core.groupby.DataFrameGroupBy,
+    target: str,
     ncols: int,
     bins_dict: dict,
     cmap: Union[str, mpl.colors.Colormap],
@@ -928,7 +918,7 @@ def plot_grouped_data_interactive(
         The resulting matplotlib figure.
     """
 
-    target_df = grouped.get_group("target")
+    target_df = grouped.get_group(target)
 
     if normalize:
         norm, vmin, vmax = create_norm(df=target_df, ref_col="avg")
