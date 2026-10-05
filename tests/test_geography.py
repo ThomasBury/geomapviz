@@ -8,7 +8,6 @@ import pytest
 from shapely.geometry import Polygon, box
 
 from geomapviz import aggregate_means, aggregate_rates, assign_parent, prepare_geography
-from geomapviz.aggregator import dissolve_and_aggregate
 from geomapviz.shapefiles import load_geometry
 
 
@@ -225,43 +224,10 @@ def test_parent_mapping_rejects_ambiguity_missing_parents_and_conflicting_labels
     )
 
 
-def test_legacy_adapter_keeps_missing_areas_for_each_metric_and_uses_parent_mapping():
-    records, boundaries = sample()
-    for parent in (None, "region"):
-        prepared = dissolve_and_aggregate(
-            records,
-            "loss",
-            ["model_a"],
-            dissolve_on=parent,
-            geoid="area",
-            weight="exposure",
-            shp_file=boundaries,
-        )
-        assert prepared.crs == boundaries.crs
-        assert set(prepared["model"]) == {"loss", "model_a"}
-        geoid, unmatched = ("region", "empty") if parent else ("area", "004")
-        missing = prepared.loc[prepared[geoid] == unmatched]
-        assert len(missing) == 2
-        assert missing[["avg", "count", "weight"]].isna().all().all()
-        assert prepared.attrs["coverage"]["unmatched"] == [unmatched]
-        if parent:
-            assert (
-                prepared.loc[
-                    (prepared[geoid] == "north") & (prepared["model"] == "model_a"),
-                    "avg",
-                ].item()
-                == 9
-            )
-    with pytest.raises(ValueError, match="unknown"):
-        dissolve_and_aggregate(
-            records.assign(area="unknown"), "loss", geoid="area", shp_file=boundaries
-        )
-
-
 def test_file_loader_preserves_crs_and_interactive_renderer_transforms_coordinates(
     tmp_path,
 ):
-    from geomapviz.plot import get_facet, get_interactive_plot_options, get_tiles
+    from geomapviz.plot import PlotOptions, plot_geography
 
     _, boundaries = sample()
     filename = tmp_path / "boundaries.geojson"
@@ -271,13 +237,13 @@ def test_file_loader_preserves_crs_and_interactive_renderer_transforms_coordinat
     assert loaded["area"].tolist() == boundaries["area"].tolist()
     assert loaded.geometry.to_list() == boundaries.geometry.to_list()
     original = boundaries.copy(deep=True)
-    options = get_interactive_plot_options("value", "viridis", 0.6)
+    options = PlotOptions(interactive=True, alpha=0.6)
     for source in (boundaries, boundaries.to_crs(epsg=31370)):
         mapped = prepare_geography(
             pd.DataFrame({"area": ["001"], "avg": [10.0]}), source, "area"
         )
-        facet = get_facet(mapped, get_tiles(None), 0, 10, options)
-        polygons = facet.values()[-1]
+        layout = plot_geography(mapped, ["avg"], geoid="area", options=options)
+        polygons = layout.values()[0]
         expected = boundaries.to_crs(epsg=3857)
         np.testing.assert_allclose(
             polygons.data.total_bounds, expected.total_bounds, atol=0.1

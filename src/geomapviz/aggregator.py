@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import List, Optional
 
 import numpy as np
 import pandas as pd
 
 from .utils import check_list_of_str
-
-if TYPE_CHECKING:
-    import geopandas as gpd
 
 __all__ = ["aggregate_means", "aggregate_rates"]
 
@@ -236,52 +233,3 @@ def merge_zip_df(
     if geoid != "geoid":
         df = df.drop([geoid], axis=1)
     return df
-
-
-def dissolve_and_aggregate(
-    df: pd.DataFrame,
-    target: str,
-    other_cols_avg: list[str] | None = None,
-    dissolve_on: str | None = None,
-    geoid: str = "INS",
-    weight: str | None = None,
-    shp_file: gpd.GeoDataFrame | None = None,
-) -> gpd.GeoDataFrame:
-    """Feed the retained mean renderer through validated geography preparation."""
-    from .shapefiles import assign_parent, prepare_geography
-
-    check_list_of_str(other_cols_avg, "other_cols_avg")
-    groups = dissolve_on or geoid
-    metrics = [target] + (other_cols_avg or [])
-    if dissolve_on:
-        df = assign_parent(df, shp_file, geoid, dissolve_on)
-    summary = aggregate_means(df, groups, metrics, weight)
-    support = summary.attrs["support"]
-    # ponytail: legacy long-format renderer; replace with prepared summaries in M4.
-    if groups in {"model", "avg", "count", "weight"}:
-        raise ValueError(f"Legacy renderer reserves geographic ID name {groups!r}")
-    geometry = shp_file
-    if dissolve_on:
-        geometry = (
-            shp_file[[groups, shp_file.geometry.name]]
-            .dissolve(by=groups, observed=True, sort=False)
-            .reset_index()
-        )
-    prepared = prepare_geography(summary, geometry, groups)
-    long = pd.concat(
-        [
-            prepared[
-                [groups, support["count"], support["weight"], prepared.geometry.name]
-            ]
-            .rename(columns={support["count"]: "count", support["weight"]: "weight"})
-            .assign(model=metric, avg=prepared[metric])
-            for metric in metrics
-        ],
-        ignore_index=True,
-    )
-    import geopandas as gpd
-
-    result = gpd.GeoDataFrame(long, geometry=prepared.geometry.name, crs=prepared.crs)
-    result.attrs = prepared.attrs.copy()
-    result.attrs["support"] = {"count": "count", "weight": "weight"}
-    return result

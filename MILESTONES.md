@@ -261,3 +261,98 @@ Shapely 2.1.2 and the existing full rendering stack:
 M3 is complete. M4 is the next implementation milestone; ty remains deferred
 until its legacy-renderer cleanup. Existing Ruff migration changes and the
 user-supplied untracked PRD are preserved separately. No push or publication.
+
+## M4 — complete: prepared comparison rendering (2026-10-05)
+
+`geomapviz.plot.plot_geography(mapped, metrics, geoid=..., options=...)` now
+renders the ordinary M3 GeoDataFrame directly. `PlotOptions` contains rendering
+settings only: `figsize`, `ncols`, `cmap`, `facecolor`, `alpha`, `autobin`,
+`n_bins`, and the typed constructor flag `interactive`. It returns a native
+Matplotlib Figure or a HoloViews Layout of GeoViews Polygons. Data preparation
+remains explicit and numerical summaries remain usable with native libraries:
+
+```python
+from geomapviz import aggregate_rates, prepare_geography
+from geomapviz.plot import PlotOptions, plot_geography
+
+summary = aggregate_rates(records, "area", "loss", ["model_a", "model_b"], "exposure")
+mapped = prepare_geography(summary, boundaries, "area")
+figure = plot_geography(
+    mapped, ["loss", "model_a", "model_b", "model_a_difference", "model_a_ratio"],
+    geoid="area", include_support=True,
+    options=PlotOptions(ncols=3, alpha=0.8),
+)
+figure.savefig("comparison.png")
+
+import holoviews as hv
+
+layout = plot_geography(
+    mapped, ["loss", "model_a", "model_b"], geoid="area", include_support=True,
+    options=PlotOptions(interactive=True, ncols=1),
+)
+hv.save(layout, "comparison.html", backend="bokeh", resources="inline")
+```
+
+Original metrics share limits pooled from all selected finite values, without
+percentile clipping or treating missing areas as zero. Summary metadata assigns
+separate scales to totals, ratios, signed differences, support counts and
+weight/exposure. Difference scales are symmetric around zero with a diverging
+palette. `include_support=True` adds both actual support columns, each on its
+own scale. Interactive hover includes the original ID and metric labels plus
+support, including collision-adjusted names. Native dimension aliases prevent
+coordinate/color-field and sanitized-name collisions, while preserving the raw
+columns in the returned object's data.
+
+With `autobin=True`, compatible panels share pooled Fisher-Jenks classes,
+capped by the number of distinct finite values. Inputs are rescaled to [0, 1]
+for classification to avoid variance cancellation on tightly spaced values;
+boundaries come back from the original data. Signed differences instead use
+symmetric equal intervals with an odd class count no greater than `n_bins`,
+keeping zero in the middle class. Both backends use identical class assignments
+and palettes, and retain raw values for hover/inspection. Legend precision
+increases when needed to distinguish close boundaries. Constant data and fewer
+distinct values than requested classes render without inventing missing zeros.
+Entirely missing panels show their geometry without a numerical colorbar.
+
+Missing/undefined regions are grey and outlined, with hatching and a legend on
+static maps and a title note interactively. Each polygon is drawn once. Opacity
+is respected on both backends; white and dark backgrounds have readable titles
+and legends. Single maps, one-column comparisons and incomplete grids work.
+Coordinates transform to EPSG:3857 before the interactive Web Mercator
+projection; the M3 EPSG:4326/Belgian Lambert round-trip checks still pass.
+
+Breaking changes: removed `spatial_average_plot`, `spatial_average_facetplot`,
+the temporary `dissolve_and_aggregate` long-format adapter and plotting helpers.
+Replace their data-bearing `PlotOptions` calls with explicit `aggregate_means`
+or `aggregate_rates`, then `prepare_geography` and `plot_geography`. Use M3's
+`assign_parent` and native dissolution before rendering parent areas. Legacy
+`normalize`, background/tiles, precision and weight-plot options are removed;
+shared scales, distinct labels and explicit support selection replace them.
+There are no compatibility shims. Preserve summary `attrs`: without metadata,
+untagged columns are assumed to measure the same quantity; render unrelated
+quantities in separate calls.
+
+Verification on the existing CPython 3.12.7 full stack (Matplotlib 3.11.2,
+GeoPandas 1.2.0, mapclassify 2.11.0, HoloViews 1.23.2, GeoViews 1.15.1 and
+Cartopy 0.25.0):
+
+- `.venv/bin/python -m pytest -q` — 66 pass. Checks inspect prepared numbers,
+  actual native color mappers, class membership, support scales, polygon counts,
+  opacity, missing regions, hover fields, contrast, layouts, projection and exports.
+- `.venv/bin/ruff check src tests examples/prepared_comparison.py` and
+  `.venv/bin/ruff format --check src tests examples/prepared_comparison.py` pass.
+- A fresh-process check imports and renders statically without loading HoloViews,
+  GeoViews, Bokeh, Panel, Cartopy, Seaborn or Contextily. Matplotlib rcParams stay
+  unchanged, and interactive plots retain the existing renderer theme.
+- `.venv/bin/python examples/prepared_comparison.py` exports continuous and
+  classified PNG and standalone HTML comparisons to `/tmp/geomapviz-m4`.
+  Both PNGs were visually inspected. The independent M1 arithmetic, coverage
+  and native exports also pass in `/tmp/geomapviz-m4/native-baseline`.
+- `git diff --check` passes. No dependencies were added; mapclassify reports
+  its existing pure-Python fallback because optional Numba is absent.
+
+M4 is complete. M5 remains the next implementation milestone. The separate ty
+follow-up is still pending; historical resources and dependency declarations
+remain M5 work, and the newer Cartopy compatibility/fresh-install verification
+remains M6 work. Existing Ruff migration edits and the user-supplied PRD are
+preserved separately. No push or publication.
