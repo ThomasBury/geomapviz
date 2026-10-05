@@ -858,7 +858,9 @@ def get_facet(
         A GeoViews element containing the choropleth map overlaid on the specified map tiles.
     """
     polygons = gv.Polygons(
-        df, vdims=[hv.Dimension("avg", range=(vmin, vmax))], crs=ccrs.GOOGLE_MERCATOR
+        df.to_crs(epsg=3857),
+        vdims=[hv.Dimension("avg", range=(vmin, vmax))],
+        crs=ccrs.GOOGLE_MERCATOR,
     ).opts(**plot_opts)
     if cbar_labels:
         polygons.opts(

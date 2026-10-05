@@ -247,30 +247,41 @@ def dissolve_and_aggregate(
     weight: str | None = None,
     shp_file: gpd.GeoDataFrame | None = None,
 ) -> gpd.GeoDataFrame:
-    """Feed the retained mean renderer; geography validation follows in M3."""
-    import geopandas as gpd
+    """Feed the retained mean renderer through validated geography preparation."""
+    from .shapefiles import assign_parent, prepare_geography
 
-    if not isinstance(shp_file, gpd.GeoDataFrame):
-        raise TypeError("The shapefile should be a GeoDataFrame")
     check_list_of_str(other_cols_avg, "other_cols_avg")
     groups = dissolve_on or geoid
     metrics = [target] + (other_cols_avg or [])
+    if dissolve_on:
+        df = assign_parent(df, shp_file, geoid, dissolve_on)
     summary = aggregate_means(df, groups, metrics, weight)
     support = summary.attrs["support"]
     # ponytail: legacy long-format renderer; replace with prepared summaries in M4.
     if groups in {"model", "avg", "count", "weight"}:
         raise ValueError(f"Legacy renderer reserves geographic ID name {groups!r}")
-    long = (
-        summary.set_index([groups, support["count"], support["weight"]])[metrics]
-        .rename_axis(columns="model")
-        .stack()
-        .rename("avg")
-        .reset_index()
-        .rename(columns={support["count"]: "count", support["weight"]: "weight"})
-    )
-    geometry = shp_file.copy()
+    geometry = shp_file
     if dissolve_on:
-        geometry = geometry.dissolve(by=dissolve_on).reset_index()
-    long[groups] = long[groups].astype(str)
-    geometry[groups] = geometry[groups].astype(str)
-    return geometry.merge(long, on=groups, how="left")
+        geometry = (
+            shp_file[[groups, shp_file.geometry.name]]
+            .dissolve(by=groups, observed=True, sort=False)
+            .reset_index()
+        )
+    prepared = prepare_geography(summary, geometry, groups)
+    long = pd.concat(
+        [
+            prepared[
+                [groups, support["count"], support["weight"], prepared.geometry.name]
+            ]
+            .rename(columns={support["count"]: "count", support["weight"]: "weight"})
+            .assign(model=metric, avg=prepared[metric])
+            for metric in metrics
+        ],
+        ignore_index=True,
+    )
+    import geopandas as gpd
+
+    result = gpd.GeoDataFrame(long, geometry=prepared.geometry.name, crs=prepared.crs)
+    result.attrs = prepared.attrs.copy()
+    result.attrs["support"] = {"count": "count", "weight": "weight"}
+    return result

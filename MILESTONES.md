@@ -183,3 +183,81 @@ Verification:
 M0–M2 are delivered as separate local Conventional Commits. PRD.md remains the
 user-supplied untracked file; M3–M6, publication, CI/CD and site documentation
 remain pending.
+
+## M3 — complete: geography, coverage and parent areas (2026-10-05)
+
+Two public operations in the existing geometry module use user-supplied
+boundaries. `prepare_geography(summary, boundaries, geoid)` returns an ordinary
+GeoDataFrame in the boundary CRS, with every boundary retained. Summary metadata
+survives, and `mapped.attrs["coverage"]` lists `matched` and `unmatched` boundary
+IDs in boundary order. Unmatched metrics and support remain missing, distinct
+from observed zeros. Caller data and geometry are unchanged.
+
+Both keys normalize to strings without stripping, padding or guessing labels.
+Categorical labels and leading zeros survive. Numeric `1`, numeric `1.0` and
+text `"1"` match; text `"001"` remains a different ID. Missing/non-finite IDs,
+duplicate boundary IDs (including collisions after normalization), duplicate
+summary IDs, unknown observation IDs, missing columns/CRS, and missing, empty
+or invalid geometries raise explicit errors. A boundary must have one active
+geometry column. Overlapping boundary/summary column names fail rather than
+silently suffixing or overwriting metrics; select the desired boundary columns
+before joining.
+
+`assign_parent(records, boundaries, geoid, parent)` assigns parent IDs from one
+validated boundary per base ID. Parent labels must be present on all boundaries;
+existing labels in records must agree. Record order, index (including duplicate
+index labels), original base IDs and metrics are preserved. Reuse the M2
+operations on these records so totals, exposures and support are recomputed from
+the common cohort. Geometry dissolution uses native GeoPandas separately:
+
+```python
+from geomapviz import aggregate_rates, assign_parent, prepare_geography
+
+parent_records = assign_parent(records, boundaries, "area", "region")
+summary = aggregate_rates(
+    parent_records, "region", "loss", ["model_a", "model_b"], "exposure",
+)
+parent_boundaries = (
+    boundaries[["region", boundaries.geometry.name]]
+    .dissolve(by="region", observed=True)
+    .reset_index()
+)
+mapped = prepare_geography(summary, parent_boundaries, "region")
+coverage = mapped.attrs["coverage"]
+```
+
+For the synthetic north region, observed total is 48, exposure is 6, observed
+rate is 8 and model A expected total is 54 with rate 9. The difference is -1,
+ratio is 8/9 and support count is 3. Averaging the two base-area rates would
+incorrectly yield 7. Both observed-total and observed-rate inputs have checks.
+An unobserved parent boundary remains present with missing metrics.
+
+Both legacy mean-rendering callers now route through the same geography
+validation. Parent mode derives its mapping from boundaries instead of trusting
+record labels. Every unmatched boundary has a row for each metric in the
+temporary long-format result. `load_geometry` now preserves the file CRS instead
+of forcing Web Mercator. The shared interactive polygon helper transforms its
+coordinates with `to_crs(epsg=3857)` before declaring Web Mercator. Coordinate
+and per-polygon round-trip checks cover EPSG:4326 and Belgian Lambert EPSG:31370.
+
+Geometry, Cartopy and historical resource imports are deferred so the new public
+exports preserve M2's numerical import independence. Historical loaders/assets,
+plotting options/styles, and dependency declarations remain M4/M5 work. No new
+dependencies, compatibility shims, geometry repairs or guessed CRS were added.
+
+Verification with CPython 3.12.7, pandas 3.0.6, NumPy 2.5.3, GeoPandas 1.2.0,
+Shapely 2.1.2 and the existing full rendering stack:
+
+- `.venv/bin/python -m pytest -q` — 43 pass, including all M2 checks and 21
+  synthetic geography/projection cases; no historical country files are used.
+- `.venv/bin/ruff check src tests` and
+  `.venv/bin/ruff format --check src tests` pass.
+- M1 native arithmetic, coverage and static/interactive export assertions pass;
+  outputs are in `/tmp/geomapviz-m3/native-baseline`. The existing Cartopy 0.25.0
+  baseline remains in use; M6 still owns the recorded newer-version compatibility
+  check and fresh installations.
+- `git diff --check` passes.
+
+M3 is complete. M4 is the next implementation milestone; ty remains deferred
+until its legacy-renderer cleanup. Existing Ruff migration changes and the
+user-supplied untracked PRD are preserved separately. No push or publication.
