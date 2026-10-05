@@ -1,6 +1,6 @@
-"""M4 prepared-summary workflow; all boundaries and records are synthetic.
+"""Prepared-summary workflow; all boundaries and records are synthetic.
 
-Run: .venv/bin/python examples/prepared_comparison.py
+Run: .venv/bin/python examples/prepared_comparison.py [--interactive]
 """
 
 import argparse
@@ -11,7 +11,6 @@ import matplotlib
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt  # noqa: E402
-import holoviews as hv  # noqa: E402
 from native_comparison import sample  # noqa: E402
 
 from geomapviz import aggregate_rates, prepare_geography  # noqa: E402
@@ -21,7 +20,11 @@ from geomapviz.plot import PlotOptions, plot_geography  # noqa: E402
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=Path("/tmp/geomapviz-m4"))
-    output = parser.parse_args().output
+    parser.add_argument(
+        "--interactive", action="store_true", help="also export HTML maps"
+    )
+    args = parser.parse_args()
+    output = args.output
     output.mkdir(parents=True, exist_ok=True)
     records, boundaries = sample()
     summary = aggregate_rates(
@@ -37,14 +40,19 @@ def main():
         )
         figure.savefig(output / f"{name}.png")
         plt.close(figure)
-        options.interactive = True
-        layout = plot_geography(
-            mapped, metrics, geoid="area", include_support=True, options=options
-        )
-        hv.save(layout, output / f"{name}.html", backend="bokeh", resources="inline")
+        if args.interactive:
+            import holoviews as hv
+
+            options.interactive = True
+            layout = plot_geography(
+                mapped, metrics, geoid="area", include_support=True, options=options
+            )
+            hv.save(
+                layout, output / f"{name}.html", backend="bokeh", resources="inline"
+            )
     print(summary.to_string(index=False))
     print(mapped.attrs["coverage"])
-    print(f"Exported continuous/classified PNG and HTML to {output}")
+    print(f"Exported continuous/classified maps to {output}")
 
 
 if __name__ == "__main__":

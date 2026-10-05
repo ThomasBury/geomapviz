@@ -17,11 +17,25 @@ Geomapviz is a Python library for visualizing geospatial tabular data. It aggreg
 
 ## Installation
 
-`$ conda install -c conda-forge cartopy` then
-`$ pip install geomapviz -U`
+The 2.0 development checkout requires Python 3.12 or newer. Install the base
+package for aggregation, geography preparation and static maps:
 
- - If you face a `cartopy` installation error, try to install first from pre-built binaries `conda install -c conda-forge cartopy`. For installing on Linux platform, some dependencies are required, see [the cartopy documentation](https://scitools.org.uk/cartopy/docs/latest/installing.html) for details.
- - If you face a geoviews installation error, try `conda install -c pyviz geoviews`
+```sh
+pip install .
+```
+
+For interactive maps and HTML export:
+
+```sh
+pip install '.[interactive]'
+```
+
+Country boundaries, raster backgrounds and sample data are no longer bundled.
+Supply your own boundaries with `geopandas.read_file`, then use
+`aggregate_means` or `aggregate_rates`, `prepare_geography`, and
+`geomapviz.plot.plot_geography`. The obsolete `load_shp`, `load_geometry`,
+`merge_zip_df` and `convert_category_to_code` helpers have been removed.
+The hosted documentation below still describes the 1.x API.
 
 ## Documentation
 

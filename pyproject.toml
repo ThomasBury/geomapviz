@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 version = {attr = "geomapviz.__version__"}
 
 [tool.setuptools]
-package-data = {"*" = ["**/*.gz", "**/*.dbf", "**/*.cpg", "**/*.shp", "**/*.shx", "**/*.prj", "**/*.qpj", "**/*.sld" ,"**/*.tif"]}
+include-package-data = false
 
 [project]
 name = "geomapviz"
@@ -21,19 +21,11 @@ classifiers = [
     "Programming Language :: Python :: 3"
 ]
 dependencies = [
-  "holoviews>=1.14.8",
-  "geoviews",
   "matplotlib>=3.5",
   "numpy>=1.21",
   "pandas>=1.4",
   "geopandas",
   "mapclassify",
-  "contextily",
-  "panel>=0.13",
-  "scipy>=1.8.0",
-  "seaborn>=0.11.2",
-  "tqdm>=4.62.3",
-  "cartopy"
 ]
 
 
@@ -45,6 +37,12 @@ changelog = "https://github.com/ThomasBury/geomapviz"
 Tracker = "https://github.com/ThomasBury/geomapviz/issues"
 
 [project.optional-dependencies]
+interactive = [
+  "holoviews>=1.14.8",
+  "geoviews",
+  "bokeh",
+  "cartopy",
+]
 doc = [
   "ipykernel",
   "ipython_genutils",

@@ -1,5 +1,6 @@
 """Rendering checks inspect numbers, layers and native backend configuration."""
 
+import builtins
 import json
 import subprocess
 import sys
@@ -116,6 +117,7 @@ def test_single_constant_and_entirely_missing_maps(autobin):
 @pytest.mark.parametrize("autobin", [False, True])
 def test_interactive_matches_static_scales_classes_hover_and_export(tmp_path, autobin):
     import holoviews as hv
+    from bokeh.themes import Theme
     from bokeh.models import ColorBar, GlyphRenderer, HoverTool
     from bokeh.plotting import figure as BokehFigure
 
@@ -136,9 +138,19 @@ def test_interactive_matches_static_scales_classes_hover_and_export(tmp_path, au
         mapped, metrics, geoid="area", include_support=True, options=options
     )
     options.interactive = True
-    layout = plot_geography(
-        mapped, metrics, geoid="area", include_support=True, options=options
-    )
+    renderer = hv.renderer("bokeh")
+    original_theme = renderer.theme
+    theme = Theme(json={"attrs": {"Figure": {"background_fill_color": "#eeeeee"}}})
+    renderer.theme = theme
+    style = dict(matplotlib.rcParams)
+    try:
+        layout = plot_geography(
+            mapped, metrics, geoid="area", include_support=True, options=options
+        )
+        assert renderer.theme is theme
+        assert dict(matplotlib.rcParams) == style
+    finally:
+        renderer.theme = original_theme
     assert isinstance(layout, hv.Layout)
     assert layout._max_cols == 1
     assert len(layout) == 8
@@ -352,3 +364,19 @@ def test_close_classification_edges_remain_distinguishable():
     assert "1 < x ≤ 1.000000001" in labels
     assert "1.000000001 < x ≤ 1.000000002" in labels
     plt.close(figure)
+
+
+@pytest.mark.parametrize("missing", ["cartopy", "geoviews", "holoviews", "bokeh"])
+def test_interactive_without_extra_gives_install_instruction(monkeypatch, missing):
+    original_import = builtins.__import__
+
+    def without_extra(name, *args, **kwargs):
+        if name.split(".")[0] == missing:
+            raise ModuleNotFoundError(f"No module named {missing!r}", name=missing)
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", without_extra)
+    with pytest.raises(ImportError, match=r"geomapviz\[interactive\]"):
+        plot_geography(
+            sample(), ["loss"], geoid="area", options=PlotOptions(interactive=True)
+        )

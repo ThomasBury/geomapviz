@@ -8,7 +8,6 @@ import pytest
 from shapely.geometry import Polygon, box
 
 from geomapviz import aggregate_means, aggregate_rates, assign_parent, prepare_geography
-from geomapviz.shapefiles import load_geometry
 
 
 def sample():
@@ -224,7 +223,7 @@ def test_parent_mapping_rejects_ambiguity_missing_parents_and_conflicting_labels
     )
 
 
-def test_file_loader_preserves_crs_and_interactive_renderer_transforms_coordinates(
+def test_native_file_loading_and_interactive_renderer_transform_coordinates(
     tmp_path,
 ):
     from geomapviz.plot import PlotOptions, plot_geography
@@ -232,7 +231,7 @@ def test_file_loader_preserves_crs_and_interactive_renderer_transforms_coordinat
     _, boundaries = sample()
     filename = tmp_path / "boundaries.geojson"
     boundaries.to_file(filename, driver="GeoJSON")
-    loaded = load_geometry(filename, "area")
+    loaded = gpd.read_file(filename)
     assert loaded.crs == boundaries.crs
     assert loaded["area"].tolist() == boundaries["area"].tolist()
     assert loaded.geometry.to_list() == boundaries.geometry.to_list()

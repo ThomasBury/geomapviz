@@ -283,10 +283,18 @@ def _static(mapped, metrics, scales, quantities, options):
 
 
 def _interactive(mapped, metrics, geoid, support, scales, quantities, options):
-    import cartopy.crs as ccrs
-    import geoviews as gv
-    import holoviews as hv
-    from bokeh.models import FixedTicker, HoverTool
+    try:
+        import cartopy.crs as ccrs
+        import geoviews as gv
+        import holoviews as hv
+        from bokeh.models import FixedTicker, HoverTool
+    except ModuleNotFoundError as error:
+        if error.name not in {"cartopy", "geoviews", "holoviews", "bokeh"}:
+            raise
+        raise ImportError(
+            "Interactive maps require the interactive extra: "
+            "pip install 'geomapviz[interactive]'"
+        ) from error
 
     # Initialize only on the explicitly requested interactive path.
     hv.extension("bokeh", logo=False)

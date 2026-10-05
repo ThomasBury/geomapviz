@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 import numpy as np
 import pandas as pd
 
@@ -177,59 +175,3 @@ def aggregate_rates(
         }
     result.attrs["comparisons"] = comparisons
     return result
-
-
-def merge_zip_df(
-    zip_path: str,
-    df: pd.DataFrame,
-    geoid: str = "geoid",
-    cols_to_keep: Optional[List[str]] = None,
-) -> pd.DataFrame:
-    """
-    Merge a DataFrame `df` with a mapping table for the zipcode and other relevant geographical information
-    (district name, sub-districts, etc.). The key is the `geoid` column.
-    The zip mapper might be such as:
-
-    |    |   geoid | town        |     lat |    long |   postcode | district  | borough           |
-    |  0 |   21004 | BRUSSEL     | 50.8333 | 4.35    |       1000 | Brussels  | Brussel Hoofdstad |
-    |  1 |   21015 | SCHAARBEEK  | 50.85   | 4.38333 |       1030 | Brussels  | Brussel Hoofdstad |
-
-
-    Parameters
-    ----------
-    zip_path :
-        The path to the zipcode mapper, a csv file with additional geo info and a geoid column
-    df :
-        The DataFrame to merge with the zipcode mapper
-    geoid :
-        The name of the `geoid` column in both the `df` and the zipcode mapper
-    cols_to_keep :
-        The list of columns to keep from the zipcode mapper. If None, keep all columns.
-
-    Returns
-    -------
-    pd.DataFrame
-        The merged DataFrame with additional geo information
-
-    Raises
-    ------
-    TypeError
-        If `cols_to_keep` is not None and not a list of strings
-
-    """
-    if (not isinstance(cols_to_keep, list)) and (cols_to_keep is not None):
-        raise TypeError("If `cols_to_keep` is not None, it should be a list of strings")
-
-    # Load zipcode mapper and adding borough to the DataFrame
-    zip_df = pd.read_csv(zip_path)
-    zip_df["geoid"] = zip_df["geoid"].astype(str)
-    if cols_to_keep is not None:
-        zip_map = zip_df[["geoid"] + cols_to_keep].copy()
-    else:
-        zip_map = zip_df.copy()
-    df[geoid] = df[geoid].astype(str)
-    zip_map["geoid"] = zip_map["geoid"].astype(str)
-    df = pd.merge(df, zip_map, how="left", left_on=[geoid], right_on=["geoid"])
-    if geoid != "geoid":
-        df = df.drop([geoid], axis=1)
-    return df
