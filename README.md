@@ -2,7 +2,7 @@
 
 [buy me caffeine](https://ko-fi.com/V7V72SOHX)
 
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Code style: Ruff](https://img.shields.io/badge/code%20style-Ruff-D7FF64.svg)](https://github.com/astral-sh/ruff)
 [![PyPI version](https://img.shields.io/pypi/v/geomapviz?style=flat)](https://pypi.org/project/geomapviz/)
 
 # 🗺️🐍 Geomapviz - Python Library for Beautiful and Interactive Geospatial Tabular Data Visualization 🚀
