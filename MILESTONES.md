@@ -1102,3 +1102,74 @@ performance or statistical calibration.
 The runnable check, archive checksum, numerical evidence, PNG/HTML exports and
 offline browser results are recorded in
 `/tmp/geomapviz-real-data/trial-report.md`. No runtime source was changed.
+
+## Geographic documentation restoration — phase 1 complete (2026-10-06)
+
+Added complete, documented geographic snapshots under `examples/data/`:
+
+- Statbel's 19,795 statistical sectors for 2024 dissolved into 581 municipality
+  polygons, preserving EPSG:31370 and the underlying 2022 boundary vintage.
+  Source attributes retain municipality names and explicit mappings to 43
+  arrondissements and three regions. The English redistribution licence is included.
+- CBS / PDOK's 2024 postcode4 collection, retrieved by `jaarcode=2024` and all
+  five response pages in EPSG:28992: 4,071 unique postcode polygons stored with
+  text identifiers. Selected published resident/age counts are retained in a
+  companion CSV, including original suppression codes. CC BY 4.0 attribution
+  and licence text are included.
+- Both ZIPs contain `.shp`, `.shx`, `.dbf`, `.prj` and UTF-8 `.cpg` sidecars.
+  No simplification or geometry repair was applied. `manifest.json` records
+  retrieval date, URLs, source/output checksums, field mappings and counts.
+  `prepare_snapshots.py` documents and implements the preprocessing; its network
+  access is confined to snapshot maintenance, never gallery execution.
+
+`examples/geographic_gallery.py` is the canonical runner for `belgium`,
+`aggregation`, `rates`, `netherlands`, `demographics` and default `all`.
+It exports 14 PNGs, record/summary CSVs and metadata/coverage JSON, with
+`--interactive` adding 13 inline standalone HTML pages. All simulated values
+and predictions are labelled, use projected-coordinate patterns, a fixed seed,
+unequal record counts and strictly positive exposure. Parent means are recomputed
+from original records; geometry dissolution is separate. Rate maps deliberately
+distinguish missing Antwerpen, an observed zero in Brussels and an undefined
+east-model ratio in Charleroi. The CBS common cohort includes 3,968 postcodes;
+all 103 excluded boundaries remain visible with missing metrics.
+
+The runner reuses the existing v2 APIs without runtime source changes. Native
+Matplotlib normalization shares the scale across administrative levels. For
+HTML, native HoloViews polygons retain the already projected GeoViews data and
+options, avoiding redundant Cartopy projection. Figure cycles are collected
+between full-detail exports. Full geometry makes HTML large (5–93 MB per page)
+and rendering slower; mapclassify's existing pure-Python fallback also remains.
+No new runtime dependency or documentation framework was introduced.
+
+Verification evidence is under `/tmp/geomapviz-gallery-phase1/`:
+
+- A roughly 23 MB temporary reproduction ZIP was created with Python's
+  standard `zipfile` CLI and extracted outside the checkout. All five cases ran
+  in published PyPI `geomapviz==2.0.0` base and interactive installations with
+  `uv run --no-project --python 3.12`. The base environment contains no optional
+  interactive packages. A separate launch from `/tmp` verifies script-relative
+  data paths. Exact `2.0.1` commands remain a phase 3 publication check.
+- `check_geographic_gallery.py --exports ../base ../interactive` passes snapshot
+  checksums, unique text IDs, CRS, valid polygons, complete parent mappings,
+  coverage, independent NumPy means/rate calculations and original-record parent
+  totals/weights. Both modes' exported CSVs match these calculations. Zero,
+  missing coverage and undefined ratios retain their distinct meanings.
+- PNGs were visually inspected for extent, legends, scales and classification.
+  All 14 PNGs have identical hashes between the two installation modes. All 13
+  HTML pages pass hover, pan, zoom and reset in local Chromium with the browser
+  offline and HTTP(S) requests blocked. Browser checks live only in the temporary
+  verification directory; they add no example installation dependency.
+- Existing pytest: 70 pass. Ruff lint and formatting on `src tests examples`,
+  ty 0.0.84 against `src`, strict Zensical build, `git diff --check`, `uv build`
+  and `twine check --strict` pass. The final wheel is 14,205 bytes; the source
+  archive is 30,910 bytes. Neither contains geographic data or rendered assets;
+  `MANIFEST.in` explicitly prunes `examples/data`.
+- Reproduction archive checks confirm the runner, numerical checker, instructions,
+  both data ZIPs, population CSV, provenance and licences are present without
+  bytecode caches. The generated bundle and renders remain untracked in `/tmp`.
+
+This is the phase 1 review boundary. Phase 2 owns illustrated Markdown tutorials,
+homepage/README, navigation, source snippets, selected committed previews/HTML
+and site bundle generation. Phase 3 owns version 2.0.1, release checks and deployed
+gallery/download verification. No push, tag or publication was performed here;
+the existing 1.1.3 and 2.0.0 archives are unchanged.
