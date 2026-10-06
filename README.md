@@ -1,37 +1,46 @@
 # Geomapviz
 
-**Geomapviz 2.0.0** — Python 3.12+ is required.
-Geomapviz prepares geographic means and exposure-weighted rate comparisons,
-joins them to your boundaries, and plots observed and predicted results with
-shared scales. Summaries remain inspectable pandas DataFrames.
+Geomapviz calculates geographic averages from tabular records and maps them onto
+your boundaries. It compares observed and predicted rates, weighted by exposure,
+using shared color scales so you can compare areas and models.
+Summaries remain inspectable pandas DataFrames before plotting.
+
+- [Documentation / Quickstart](https://geomapviz.readthedocs.io/en/v2.0.0/)
+- [API reference](https://geomapviz.readthedocs.io/en/v2.0.0/api/)
+- [1.x migration guide](https://geomapviz.readthedocs.io/en/v2.0.0/api/#migrating-from-1x)
 
 ## Installation
 
-Use Python 3.12 by default (3.12+ is required):
+Geomapviz 2.0.0 requires Python 3.12 or newer. Install it in your Python environment.
+
+Base package for static maps:
 
 ```sh
 python -m pip install geomapviz==2.0.0
-# For interactive maps and standalone HTML export:
+```
+
+Interactive extra for interactive maps and standalone HTML export:
+
+```sh
 python -m pip install 'geomapviz[interactive]==2.0.0'
 ```
 
-Or with uv:
+See the [installation guide](https://geomapviz.readthedocs.io/en/v2.0.0/#installation)
+for uv commands, environment setup and platform considerations.
 
-```sh
-uv venv --python 3.12
-uv pip install geomapviz==2.0.0
-# For interaction, use uv pip install 'geomapviz[interactive]==2.0.0' instead.
-```
+## Your first map
 
-Compatible wheels include precompiled native libraries. No Conda environment is
-required on the verified Linux stack. See the [installation guide](docs/index.md#installation)
-for platform resolution limits and optional conda-forge fallback. For the 1.x
-API, install `geomapviz==1.1.3` and use its documentation.
+Supply tabular records and polygon boundaries with matching geographic IDs.
+Boundaries need a declared coordinate reference system (CRS), which describes how
+coordinates relate to locations on Earth. This example invents two rectangles
+in longitude and latitude (`EPSG:4326`).
 
-## Example
+Exposure is the time or quantity at risk, such as insured years. Here, `loss`
+contains observed amounts and `model` contains predicted rates per unit of
+exposure. With loss in euros and exposure in insured years, both output rates
+are euros per insured year.
 
-Supply your own boundaries; this example invents two rectangles. Observed loss
-is an amount, while `model` is a predicted rate per unit of exposure.
+Save this as `first_map.py` and run `python first_map.py`:
 
 ```python
 import geopandas as gpd
@@ -53,25 +62,34 @@ boundaries = gpd.GeoDataFrame(
     geometry=[box(4, 50, 4.08, 50.08), box(4.1, 50, 4.18, 50.08)],
     crs="EPSG:4326",
 )
+# 1. Aggregate records into rates by area.
 summary = aggregate_rates(records, "area", "loss", ["model"], "exposure")
+# 2. Join the summary to boundaries.
 mapped = prepare_geography(summary, boundaries, "area")
-figure = plot_geography(mapped, ["loss", "model"], geoid="area", include_support=True)
+# 3. Plot observed and predicted rates on a shared color scale.
+figure = plot_geography(mapped, ["loss", "model"], geoid="area")
 figure.savefig("comparison.png")
 plt.close(figure)
 ```
 
-Area `001` has observed rate 10 and predicted rate 11; area `002` remains missing.
-No boundaries, rasters or sample datasets are bundled.
+Area `001` has observed rate `40 / 4 = 10` and predicted rate
+`(8 × 1 + 12 × 3) / 4 = 11`. Area `002` has no records and remains missing.
+Open `comparison.png` in your working directory to see the two panels.
 
-## Documentation
+The [complete tutorial](https://geomapviz.readthedocs.io/en/v2.0.0/#a-complete-synthetic-comparison)
+adds models, differences and ratios; see its
+[map preview](https://geomapviz.readthedocs.io/en/v2.0.0/assets/comparison.png).
 
-- [2.0 guide](docs/index.md): installation and a complete synthetic comparison.
-- [API and 1.x migration](docs/api.md): signatures, rendering options and breaking changes.
-- [2.0.0 documentation](https://geomapviz.readthedocs.io/en/v2.0.0/).
-- [Release notes](docs/release-notes.md): breaking changes and validation limits.
-- [1.x documentation](https://geomapviz.readthedocs.io/en/1.1.3/).
-- [Milestone evidence](MILESTONES.md): numerical, rendering and installation checks.
+## Learn more
 
-Build locally with `uv pip install --group docs` and `.venv/bin/zensical build --clean`.
-The [prepared example](examples/prepared_comparison.py) exports static PNGs;
-add `--interactive` for standalone HTML.
+- [Aggregate means and rates](https://geomapviz.readthedocs.io/en/v2.0.0/aggregation/).
+- [Prepare boundaries and check coverage](https://geomapviz.readthedocs.io/en/v2.0.0/geography/).
+- [Plot maps and export PNG or HTML](https://geomapviz.readthedocs.io/en/v2.0.0/plotting/).
+
+## Project information
+
+- [Release notes](https://geomapviz.readthedocs.io/en/v2.0.0/release-notes/)
+- [Archived 1.x documentation](https://geomapviz.readthedocs.io/en/1.1.3/)
+- [Report an issue](https://github.com/ThomasBury/geomapviz/issues)
+- [MIT license](LICENSE.md)
+- [Build the documentation](https://geomapviz.readthedocs.io/en/v2.0.0/#build-this-guide)
