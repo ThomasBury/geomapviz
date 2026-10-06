@@ -7,9 +7,9 @@ build:
     python: "3.12"
   jobs:
     install:
-      - 'python -m pip install --only-binary=:all: uv==0.12.15'
-      - 'python -m uv venv "$READTHEDOCS_VIRTUALENV_PATH"'
-      - 'python -m uv pip install --python "$READTHEDOCS_VIRTUALENV_PATH/bin/python" --only-binary=:all: --group docs'
+      - 'python -m venv "$READTHEDOCS_VIRTUALENV_PATH"'
+      - '"$READTHEDOCS_VIRTUALENV_PATH/bin/python" -m pip install --only-binary=:all: uv==0.12.15'
+      - '"$READTHEDOCS_VIRTUALENV_PATH/bin/python" -m uv pip install --python "$READTHEDOCS_VIRTUALENV_PATH/bin/python" --only-binary=:all: --group docs'
     build:
       html:
         - '"$READTHEDOCS_VIRTUALENV_PATH/bin/python" -m zensical build --clean'
