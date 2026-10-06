@@ -4,10 +4,22 @@ site_url = "https://geomapviz.readthedocs.io/"
 site_description = "Prepare, compare and map geographic means and exposure-weighted rates."
 strict = true
 nav = [
-  { "Quickstart" = "index.md" },
-  { "Aggregation" = "aggregation.md" },
-  { "Geography" = "geography.md" },
-  { "Plotting and export" = "plotting.md" },
+  { "Overview" = "index.md" },
+  { "Quickstart" = "quickstart.md" },
+  { "Examples" = [
+    { "Gallery and reproduction" = "examples/index.md" },
+    { "Belgium: geographic means" = "examples/belgium.md" },
+    { "Belgium: changing geographic scale" = "examples/aggregation.md" },
+    { "Belgium: observed and predicted rates" = "examples/rates.md" },
+    { "Netherlands: postcode geography" = "examples/netherlands.md" },
+    { "Netherlands: measured population data" = "examples/demographics.md" },
+  ] },
+  { "Guides" = [
+    { "Aggregation" = "aggregation.md" },
+    { "Geography" = "geography.md" },
+    { "Plotting and export" = "plotting.md" },
+    { "Arithmetic reference" = "arithmetic.md" },
+  ] },
   { "API and migration" = "api.md" },
   { "Release notes" = "release-notes.md" },
 ]
@@ -20,3 +32,7 @@ invalid_link_anchors = true
 tables = {}
 "pymdownx.highlight" = {}
 "pymdownx.superfences" = {}
+
+[project.markdown_extensions."pymdownx.snippets"]
+base_path = ["."]
+check_paths = true

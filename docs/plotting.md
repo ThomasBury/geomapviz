@@ -1,105 +1,93 @@
 # Plotting and export
 
-**Geomapviz 2.0.0 documentation.** `plot_geography` renders an already prepared
-GeoDataFrame. It does not aggregate records or change caller data.
+`plot_geography` renders an already prepared GeoDataFrame without reaggregation
+or mutation. See [Belgian means](examples/belgium.md) for continuous/classified
+panels, [rate comparisons](examples/rates.md) for scales by quantity, and
+[Dutch postcodes](examples/netherlands.md) for small-area interaction.
 
 ## Shared scales
 
-Select metrics that measure the same quantity. Observed and predicted rates
-share a scale across panels. Metadata gives totals, ratios, differences, counts
-and weights separate scales. Differences use a symmetric scale centered on
-zero and the `RdBu_r` diverging palette. Other quantities use `options.cmap`.
+Select metrics with the same units. Observed and predicted rates share a range;
+metadata separates totals, ratios, differences, counts and weights. Differences
+use a symmetric range centered on zero and `RdBu_r`; other quantities use
+`options.cmap`. The rate tutorial shows why a comparison needs consistent colors.
 
-When all finite values in a quantity group are equal, its shared range is padded.
-A constant panel otherwise shares the range of its varying peers. Missing values
-do not influence scale limits; an entirely missing panel has no numerical colorbar.
+Missing values do not affect limits. Constant quantity groups receive a padded
+range; a constant panel otherwise shares the range of varying peers. An entirely
+missing panel has no numerical colorbar.
+
+The [administrative-scale tutorial](examples/aggregation.md) exports separate
+figures with pooled limits applied through native Matplotlib normalization, and
+the same limits for interaction. Independent calls normally choose their own
+ranges; a region map should not silently stretch a narrower range to the full palette.
 
 ## Classification
 
-Continuous colors are the default. `PlotOptions(autobin=True, n_bins=7)` pools
-finite values across panels of the same quantity and uses at most seven
-Fisher–Jenks classes, limited by the number of distinct values. The class edges
-and palette are shared across the static and interactive backends.
+Continuous colors are the default. `PlotOptions(autobin=True, n_bins=5)` pools
+finite values across panels of each quantity into up to five Fisher–Jenks
+classes, limited by distinct values. The
+[Belgian classified panels](examples/belgium.md#classification) share edges and
+palette; the [Dutch view](examples/netherlands.md#classified-patterns) uses the
+same rules in PNG and HTML. Values on an upper edge belong to the interval
+ending there. Read interval legends rather than assuming continuous values.
 
-Differences instead use symmetric equal intervals with an odd number of
-classes, keeping zero in the central class. An even requested `n_bins` is
-reduced by one for differences. Class legends show intervals; values on an
-upper edge belong to the interval ending at that edge.
-
-```python
-# Continue from the Quickstart's mapped frame and metrics.
-from geomapviz.plot import PlotOptions, plot_geography
-
-classified = plot_geography(
-    mapped, metrics, geoid="area", include_support=True,
-    options=PlotOptions(autobin=True, n_bins=5, ncols=3),
-)
-classified.savefig("classified.png")
-plt.close(classified)
-```
+Differences use symmetric equal intervals with an odd number of classes,
+keeping zero central. An even requested `n_bins` is reduced by one for differences.
 
 ## Missing regions and support
 
-Missing and undefined values are grey with an outline, and hatched in static
-maps. They never become zero. The example's `004` is missing in every panel;
-`003` is zero in the loss panel and undefined in the model A ratio panel.
+Missing and undefined values remain grey, outlined and hatched in static maps.
+They never become zero. The rates tutorial distinguishes these meanings for
+Antwerpen, Brussels and Charleroi; the CBS tutorial retains excluded boundaries.
 
-`include_support=True` appends count and total-weight panels from summary
-metadata. Each has its own scale. Interactive hover includes the geographic
-ID, raw metric and available support even when support panels are not requested.
-Support indicates the records and exposure behind a result; it is not uncertainty.
+`include_support=True` appends record count and total-weight panels discovered
+from metadata, each on its own scale. The runner exports support separately so
+readers can compare its patterns with rates. Hover reports ID, raw metric and
+available support even without support panels. Counts and exposure describe
+information volume; they are not uncertainty, confidence or prediction intervals.
 
 ## Metadata
 
-Keep `DataFrame.attrs` from aggregation through preparation and rendering.
-The renderer uses it to discover collision-safe derived names and distinguish
-quantities. `prepare_geography` preserves it and adds coverage.
+Keep aggregation `DataFrame.attrs` through preparation and rendering. It identifies
+collision-safe derived names and quantities. `prepare_geography` preserves it
+and adds coverage. CSV does not retain `attrs`; the runner writes companion JSON
+for inspection. Regenerate the prepared frame when reproducing maps.
 
-CSV does not preserve `attrs`. Selecting or serializing columns can also lose
-metadata or retain references to columns you removed. Keep the complete prepared
-frame and use the renderer's `metrics` argument to select panels. If you restore
-metadata yourself, also retain every referenced support column.
-
-Without metadata, selected metrics are assumed to share units. Plot different
-quantities in separate calls, and omit `include_support=True` unless valid
-support metadata is present.
+Selecting/serializing columns may lose metadata or keep references to removed
+columns. Keep the complete prepared frame and select panels through `metrics`.
+If restoring metadata, retain every referenced support column. Without metadata,
+selected metrics are assumed to share units; render different quantities separately
+and omit support unless valid metadata exists.
 
 ## PNG export
 
-Static plotting returns a Matplotlib `Figure`. Use its native export method:
-
-```python
-import matplotlib.pyplot as plt
-
-figure = plot_geography(
-    mapped, metrics, geoid="area", include_support=True,
-    options=PlotOptions(ncols=3, figsize=(15, 10), alpha=0.8),
-)
-figure.savefig("comparison.png", dpi=150)
-plt.close(figure)
-```
+Static plotting returns a Matplotlib `Figure`. Use its native `savefig` method
+and close it afterwards. The canonical export helper below supplies DPI, panel
+size, optional class rules and shared limits. The rates tutorial also uses
+native Matplotlib for its small comparison scatterplot.
 
 ## Standalone HTML export
 
-Install `geomapviz[interactive]==2.0.0` from PyPI. Interactive plotting
-returns a HoloViews layout of GeoViews polygons. Inline resources make the
-export usable offline with no Python server or map-tile downloads:
+Install `geomapviz[interactive]==2.0.0`. Interaction returns a HoloViews layout
+of GeoViews polygons. `holoviews.save(..., backend="bokeh", resources="inline")`
+exports plot resources for use without a Python server or tile service.
+The canonical helper retains already projected polygon data/options as native
+HoloViews polygons to avoid repeated projection:
 
 ```python
-import holoviews as hv
-
-layout = plot_geography(
-    mapped, metrics, geoid="area", include_support=True,
-    options=PlotOptions(interactive=True, ncols=3, figsize=(15, 10), alpha=0.8),
-)
-hv.save(layout, "comparison.html", backend="bokeh", resources="inline")
+--8<-- "examples/geographic_gallery.py:export"
 ```
 
-[Open or download the interactive example](assets/comparison.html).
-The exported layout has fixed panel dimensions: use `ncols=1` for a narrow
-screen and choose an appropriate `figsize` before export. Interactive dimensions
-use 100 pixels per inch. Missing the extra gives an explicit installation error.
+[Open the Dutch postcode view](assets/geographic/netherlands_classified.html),
+or use the [titled embeds and downloads](examples/netherlands.md#explore-interactively).
+Full geometry makes exports large; static previews remain available. Offline
+hover, pan, zoom and reset have been tested with external requests blocked.
+Optional upstream stylesheet requests are unnecessary for those tools.
 
-The renderers preserve application Matplotlib settings and an existing Bokeh
-theme. Tiles, raster backgrounds, normalization and statistical intervals are
-outside the 2.0 API. See [PlotOptions](api.md#plotoptions) for all controls.
+The package renderer starts with fixed panel dimensions at 100 pixels per inch.
+The gallery helper removes fixed dimensions and uses native HoloViews sizing
+with equal coordinate units. Native Bokeh auto ranges enforce the coordinate
+scale as the frame resizes, including space taken by colorbars. Choose `ncols=1` when a narrow screen needs larger
+individual panels. A missing extra gives an explicit installation error. Rendering preserves application Matplotlib
+settings and an existing Bokeh theme. Tiles, raster backgrounds, normalization
+and statistical intervals are outside the v2 API; see [PlotOptions](api.md#plotoptions).

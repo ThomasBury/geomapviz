@@ -86,6 +86,15 @@ def save_summary(mapped, geoid, output, name):
     (output / f"{name}.json").write_text(json.dumps(metadata, indent=2) + "\n")
 
 
+# --8<-- [start:export]
+def geographic_ranges(plot, _element):
+    from bokeh.models import DataRange1d
+
+    # Bokeh enforces match_aspect only with native auto ranges, not fixed ranges.
+    plot.state.x_range = DataRange1d()
+    plot.state.y_range = DataRange1d()
+
+
 def export(
     mapped,
     metrics,
@@ -118,14 +127,32 @@ def export(
         layout = plot_geography(mapped, metrics, geoid=geoid, options=options)
         if limits is not None:
             layout = layout.map(lambda panel: panel.opts(clim=limits), gv.Polygons)
+
         # plot_geography already projects to Web Mercator. Native HoloViews
         # polygons retain data/options and avoid repeating Cartopy projection.
-        layout = layout.map(
-            lambda panel: panel.clone(new_type=hv.Polygons), gv.Polygons
+        def native_polygon(panel):
+            rendering = {
+                **panel.opts.get("plot").kwargs,
+                **panel.opts.get("style").kwargs,
+            }
+            rendering.pop("width")
+            rendering.pop("height")
+            rendering["hooks"] = [*rendering["hooks"], geographic_ranges]
+            return (
+                panel.clone(new_type=hv.Polygons)
+                .opts.clear()
+                .opts(**rendering, data_aspect=1, responsive="width", aspect=1)
+            )
+
+        layout = layout.map(native_polygon, gv.Polygons).opts(
+            sizing_mode="stretch_width"
         )
         hv.save(layout, output / f"{name}.html", backend="bokeh", resources="inline")
         del layout
         gc.collect()
+
+
+# --8<-- [end:export]
 
 
 # --8<-- [start:belgium]

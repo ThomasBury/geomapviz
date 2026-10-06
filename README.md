@@ -1,95 +1,61 @@
 # Geomapviz
 
-Geomapviz calculates geographic averages from tabular records and maps them onto
-your boundaries. It compares observed and predicted rates, weighted by exposure,
-using shared color scales so you can compare areas and models.
-Summaries remain inspectable pandas DataFrames before plotting.
+[![Belgian municipality boundaries colored by a simulated weighted geographic signal.](docs/assets/geographic/belgium_mean.png)](docs/examples/belgium.md)
 
-- [Documentation / Quickstart](https://geomapviz.readthedocs.io/en/v2.0.0/)
-- [API reference](https://geomapviz.readthedocs.io/en/v2.0.0/api/)
-- [1.x migration guide](https://geomapviz.readthedocs.io/en/v2.0.0/api/#migrating-from-1x)
+Geomapviz calculates geographic means and exposure-weighted rate comparisons
+from tabular records, joins them to your boundaries, and draws maps with shared
+color scales. Summaries remain inspectable pandas DataFrames. This map uses
+real Belgian municipality boundaries and simulated values.
+
+From a checkout, run the working Belgian demonstration:
+
+```sh
+uv run --no-project --python 3.12 --with 'geomapviz==2.0.0' \
+  examples/geographic_gallery.py --case belgium --output output
+```
+
+Open `output/belgium_mean.png`. The [walkthrough](docs/examples/belgium.md)
+explains equal/weighted means, four related signals and classification.
+The script reads local snapshots; running needs no data downloads, tiles or server.
 
 ## Installation
 
-Geomapviz 2.0.0 requires Python 3.12 or newer. Install it in your Python environment.
-
-Base package for static maps:
+[uv](https://docs.astral.sh/uv/guides/scripts/) supplies Python and dependencies
+for the demonstration. `--no-project` avoids installing checkout dependencies.
+For an existing Python 3.12+ environment:
 
 ```sh
 python -m pip install geomapviz==2.0.0
-```
-
-Interactive extra for interactive maps and standalone HTML export:
-
-```sh
+# Add interactive maps and standalone HTML:
 python -m pip install 'geomapviz[interactive]==2.0.0'
 ```
 
-See the [installation guide](https://geomapviz.readthedocs.io/en/v2.0.0/#installation)
-for uv commands, environment setup and platform considerations.
+The geographic data is in the separate examples, outside installed package
+files. See the [Quickstart](docs/quickstart.md) for environment setup and the
+[gallery](docs/examples/index.md) for the downloadable reproduction bundle.
 
-## Your first map
+## Examples
 
-Supply tabular records and polygon boundaries with matching geographic IDs.
-Boundaries need a declared coordinate reference system (CRS), which describes how
-coordinates relate to locations on Earth. This example invents two rectangles
-in longitude and latitude (`EPSG:4326`).
+[![Dutch postcode maps of measured percentages of residents under 15 and aged 65 or older.](docs/assets/geographic/demographics.png)](docs/examples/demographics.md)
 
-Exposure is the time or quantity at risk, such as insured years. Here, `loss`
-contains observed amounts and `model` contains predicted rates per unit of
-exposure. With loss in euros and exposure in insured years, both output rates
-are euros per insured year.
+- [Belgium: geographic means](docs/examples/belgium.md)
+- [Belgium: changing geographic scale](docs/examples/aggregation.md)
+- [Belgium: observed and predicted rates](docs/examples/rates.md)
+- [Netherlands: postcode geography](docs/examples/netherlands.md)
+- [Netherlands: measured population data](docs/examples/demographics.md)
 
-Save this as `first_map.py` and run `python first_map.py`:
+Each illustrated Markdown tutorial uses code from the canonical Python runner,
+describes its data and includes reproduction commands. Synthetic demonstrations
+are labelled; the population tutorial uses published CBS counts. Full geometry,
+licences and provenance are committed under `examples/data/`.
 
-```python
-import geopandas as gpd
-import matplotlib.pyplot as plt
-import pandas as pd
-from shapely.geometry import box
+## Documentation and project information
 
-from geomapviz import aggregate_rates, prepare_geography
-from geomapviz.plot import plot_geography
-
-records = pd.DataFrame({
-    "area": ["001", "001"],
-    "loss": [10.0, 30.0],
-    "model": [8.0, 12.0],
-    "exposure": [1.0, 3.0],
-})
-boundaries = gpd.GeoDataFrame(
-    {"area": ["001", "002"]},
-    geometry=[box(4, 50, 4.08, 50.08), box(4.1, 50, 4.18, 50.08)],
-    crs="EPSG:4326",
-)
-# 1. Aggregate records into rates by area.
-summary = aggregate_rates(records, "area", "loss", ["model"], "exposure")
-# 2. Join the summary to boundaries.
-mapped = prepare_geography(summary, boundaries, "area")
-# 3. Plot observed and predicted rates on a shared color scale.
-figure = plot_geography(mapped, ["loss", "model"], geoid="area")
-figure.savefig("comparison.png")
-plt.close(figure)
-```
-
-Area `001` has observed rate `40 / 4 = 10` and predicted rate
-`(8 × 1 + 12 × 3) / 4 = 11`. Area `002` has no records and remains missing.
-Open `comparison.png` in your working directory to see the two panels.
-
-The [complete tutorial](https://geomapviz.readthedocs.io/en/v2.0.0/#a-complete-synthetic-comparison)
-adds models, differences and ratios; see its
-[map preview](https://geomapviz.readthedocs.io/en/v2.0.0/assets/comparison.png).
-
-## Learn more
-
-- [Aggregate means and rates](https://geomapviz.readthedocs.io/en/v2.0.0/aggregation/).
-- [Prepare boundaries and check coverage](https://geomapviz.readthedocs.io/en/v2.0.0/geography/).
-- [Plot maps and export PNG or HTML](https://geomapviz.readthedocs.io/en/v2.0.0/plotting/).
-
-## Project information
-
-- [Release notes](https://geomapviz.readthedocs.io/en/v2.0.0/release-notes/)
-- [Archived 1.x documentation](https://geomapviz.readthedocs.io/en/1.1.3/)
+- [Published 2.0.0 documentation](https://geomapviz.readthedocs.io/en/v2.0.0/)
+- [Aggregation](docs/aggregation.md), [geography](docs/geography.md) and [plotting](docs/plotting.md) guides
+- [API and 1.x migration](docs/api.md)
+- [Release notes](docs/release-notes.md)
+- [Archived 1.1.3 tutorials](https://geomapviz.readthedocs.io/en/1.1.3/nb/geomap.html)
 - [Report an issue](https://github.com/ThomasBury/geomapviz/issues)
-- [MIT license](LICENSE.md)
-- [Build the documentation](https://geomapviz.readthedocs.io/en/v2.0.0/#build-this-guide)
+- [MIT license](LICENSE.md); geographic data has its own included licences
+- [Build the documentation](docs/quickstart.md#build-the-documentation)
