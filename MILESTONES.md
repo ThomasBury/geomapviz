@@ -445,3 +445,120 @@ Verification:
 M5 is complete. M6 remains the next implementation milestone; the separate ty
 follow-up is also pending. Existing Ruff migration edits and the user-supplied
 PRD are preserved separately. No push or publication.
+
+## M6 — complete: local distribution and compatibility verification (2026-10-06)
+
+Built a wheel and source archive with the existing setuptools backend and
+installed both outside the repository, in fresh base and interactive environments
+on CPython 3.12.7 and 3.14.8. The development version remains `2.0.0.dev0`;
+this is local readiness evidence, not a published release candidate.
+
+The [official Python downloads page](https://www.python.org/downloads/) identified
+3.14.8 as the newest stable Python during verification. uv 0.12.15 had no binary
+for that patch version, so the official CPython source was built in
+`/tmp/geomapviz-m6`, with development headers extracted there. No system packages
+or existing interpreters were replaced. Verification is for standard CPython
+on Linux x86_64/glibc 2.39; other operating systems and free-threaded Python have
+not been tested.
+
+Set conservative dependency floors from a passing older stack rather than
+retaining unverified 1.x bounds. These are supported tested floors, not a claim
+that every earlier version fails. No upper bounds or new dependencies were added.
+
+| Direct dependency | Tested floor on Python 3.12.7 | Current stack on Python 3.12.7 and 3.14.8 |
+| --- | --- | --- |
+| NumPy | 1.26.4 | 2.5.3 |
+| pandas | 2.2.3 | 3.0.6 |
+| GeoPandas | 1.0.1 | 1.2.0 |
+| Matplotlib | 3.8.4 | 3.11.2 |
+| mapclassify | 2.6.1 | 2.11.0 |
+| HoloViews (extra) | 1.20.2 | 1.23.2 |
+| GeoViews (extra) | 1.14.1 | 1.15.1 |
+| Bokeh (extra) | 3.6.3 | 3.9.2 |
+| Cartopy (extra) | 0.24.1 | 0.26.0 |
+
+Floors were exercised together with resolved transitive dependencies; the
+matrix does not claim every possible version combination. The current prepared
+EPSG:3857 renderer passes on Cartopy 0.26.0 with GeoViews 1.15.1. M1's older
+hvPlot/PlateCarree example failure does not require a core Cartopy pin. Context7
+refreshed the native [GeoPandas active-geometry contract](https://github.com/geopandas/geopandas/blob/main/doc/source/docs/user_guide/data_structures.rst)
+and [GeoViews/Cartopy installation guidance](https://github.com/holoviz/geoviews/blob/main/doc/index.rst).
+
+Added `examples/verify_install.py`, a runnable check using the existing synthetic
+sample and independent native arithmetic. It asserts the package comes from the
+selected environment, numerical imports avoid rendering, weighted/rate/parent
+arithmetic matches hand-worked values, coverage retains unobserved areas, caller
+records are unchanged, and continuous/classified PNG export works. Interactive
+mode also exports standalone HTML and preserves the application Bokeh theme and
+Matplotlib settings. Base mode verifies optional distributions are absent and
+interaction raises the install instruction. It prints actual dependency versions.
+
+The source archive's plot tests imported examples that it previously omitted.
+`MANIFEST.in` now includes the three synthetic Python examples, enabling the
+included suite to run from the extracted archive. The wheel still contains only
+five Python modules and distribution metadata; neither artifact contains country
+boundaries, rasters or sample-data bundles. Archive inspection compared the wheel
+modules with checkout source and checked the source examples/tests explicitly.
+Final compressed sizes are 15,821 bytes for the wheel and 28,559 for the source
+archive. Their README/metadata include the preserved working-tree Ruff edits.
+
+| Installed artifact / stack | Python 3.12.7 | Python 3.14.8 |
+| --- | --- | --- |
+| Wheel, base | 39 tests and static installation check pass | 39 tests and static installation check pass |
+| Source archive, base | 39 tests and static installation check pass | 39 tests and static installation check pass |
+| Wheel, interactive | 70 tests and static/interactive installation check pass | 70 tests and static/interactive installation check pass |
+| Source archive, interactive | 70 tests and static/interactive installation check pass | 70 tests and static/interactive installation check pass |
+| Wheel, tested dependency floors with interaction | 70 tests and static/interactive installation check pass | Not tested |
+
+`uv pip check` passes in every environment. Regression tests ran from the actual
+extracted source archive, with
+`PYTHONPATH` removed; package paths point into the selected environment. The base
+subset excludes the geography test that also constructs interactive maps; that
+case passes in every full-stack run. Every base environment retains no HoloViews,
+GeoViews, Bokeh, Cartopy or Panel. Exports, resolved versions, logs, interpreter,
+and artifacts remain in `/tmp/geomapviz-m6`.
+
+Reproduction from a checkout, using the intended interpreter for each environment:
+
+```sh
+uv build --out-dir /tmp/geomapviz-artifacts
+uv venv /tmp/geomapviz-check --python 3.12
+uv pip install --python /tmp/geomapviz-check/bin/python /tmp/geomapviz-artifacts/geomapviz-2.0.0.dev0-py3-none-any.whl
+mkdir -p /tmp/geomapviz-source
+tar -xzf /tmp/geomapviz-artifacts/geomapviz-2.0.0.dev0.tar.gz -C /tmp/geomapviz-source
+cd /tmp/geomapviz-source/geomapviz-2.0.0.dev0
+/tmp/geomapviz-check/bin/python examples/verify_install.py --output /tmp/geomapviz-exports
+```
+
+For source installation, substitute the `.tar.gz` artifact. For interaction,
+install `geomapviz[interactive] @ file:///tmp/geomapviz-artifacts/geomapviz-2.0.0.dev0-py3-none-any.whl`
+and add `--interactive` to the check. Use a new environment for every variant.
+After the installation check, install pytest and run `python -m pytest -q tests`
+with the full stack. The base numerical/geography subset is:
+
+```sh
+python -m pytest -q tests/test_aggregation.py tests/test_geography.py -k 'not native_file_loading_and_interactive_renderer_transform_coordinates'
+```
+
+Ruff lint/format checks on `src tests examples` and `git diff --check` pass.
+The README records the complete 2.0 migration: explicit means/rates and geography
+preparation replace the old combined API, unsupported intervals and resource
+loaders are removed, plotting options contain no data, and interaction is optional.
+Strict cohort validation, undefined ratios and unmatched-boundary missing values
+remain deliberate behavior. Preserve summary metadata for derived names and
+quantity scales; CSV does not retain it. No compatibility shims were added.
+
+The M1 maintenance decision still rests on the confirmed exposure/rate workflow
+and reusable numerical/geographic validation. Native plotting remains sufficient
+for rendering alone; synthetic evidence does not establish production adoption
+or broad demand. No anonymized production case was supplied.
+
+Remaining limitations: dependency/platform coverage is the matrix above; existing
+mapclassify pure-Python fallback and older-stack upstream deprecation warnings
+remain. Setuptools still warns about the legacy license table; modern SPDX
+metadata can be addressed in the separate release-delivery phase. Hosted/site
+documentation still describes 1.x. The separately recorded ty follow-up, site
+work, CI/CD and release publication remain outside M6.
+
+M0–M6 are complete. Existing Ruff migration changes and untracked PRD.md remain
+separate. No push, tag, publication or external service change was performed.

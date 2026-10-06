@@ -37,6 +37,40 @@ Supply your own boundaries with `geopandas.read_file`, then use
 `merge_zip_df` and `convert_category_to_code` helpers have been removed.
 The hosted documentation below still describes the 1.x API.
 
+## Migrating to 2.0
+
+2.0 is a breaking release; the checkout remains at `2.0.0.dev0` until release
+delivery. Python 3.12 is the minimum. Dependency bounds reflect the tested
+stacks recorded in [MILESTONES.md](MILESTONES.md).
+
+| Removed 1.x behavior | 2.0 replacement |
+| --- | --- |
+| `prepare_dataframe`, weighted-average helpers and renamed `target` metrics | `aggregate_means` preserves metric names and returns a DataFrame |
+| Implicit weighting and confidence intervals | `aggregate_rates` distinguishes observed totals/rates; predictions are rates; intervals are removed |
+| Country loaders, sample bundles and CSV/category helpers | Read caller-supplied boundaries with GeoPandas; preserve geographic labels |
+| `spatial_average_plot`, `spatial_average_facetplot` and data-bearing `PlotOptions` | Prepare with `prepare_geography`, then render with `plot_geography` |
+| Record-supplied parent mapping and averages of area averages | `assign_parent`, aggregate original records, and dissolve boundaries explicitly |
+| Tiles, raster backgrounds, normalization and uncertainty options | Shared scales, missing-area styling and explicit support panels |
+| Interactive stack in every installation | Install the `interactive` extra when needed |
+
+Select a common finite cohort before aggregation. Missing metrics, invalid
+weights, zero-support areas and unknown/ambiguous boundary IDs fail explicitly.
+Boundaries without observations remain present with missing metrics. Preserve
+summary `attrs` for support names and quantity-specific scales; CSV does not
+retain this metadata. There are no compatibility shims.
+
+The synthetic [prepared comparison](examples/prepared_comparison.py) runs
+statically by default; add `--interactive` to also export HTML. Source archives
+include the examples needed to rerun the tests. The
+[installation check](examples/verify_install.py) must run with an installed
+artifact's Python from a copied examples directory outside the checkout:
+
+```sh
+/tmp/geomapviz-check/bin/python examples/verify_install.py --output /tmp/geomapviz-check-exports
+```
+
+For an environment installed with the interactive extra, add `--interactive`.
+
 ## Documentation
 
 The [documentation notebook](nb/docs/geomap.ipynb) illustrates the functionality of `geomapviz`

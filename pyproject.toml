@@ -21,11 +21,11 @@ classifiers = [
     "Programming Language :: Python :: 3"
 ]
 dependencies = [
-  "matplotlib>=3.5",
-  "numpy>=1.21",
-  "pandas>=1.4",
-  "geopandas",
-  "mapclassify",
+  "matplotlib>=3.8.4",
+  "numpy>=1.26.4",
+  "pandas>=2.2.3",
+  "geopandas>=1.0.1",
+  "mapclassify>=2.6.1",
 ]
 
 
@@ -38,10 +38,10 @@ Tracker = "https://github.com/ThomasBury/geomapviz/issues"
 
 [project.optional-dependencies]
 interactive = [
-  "holoviews>=1.14.8",
-  "geoviews",
-  "bokeh",
-  "cartopy",
+  "holoviews>=1.20.2",
+  "geoviews>=1.14.1",
+  "bokeh>=3.6.3",
+  "cartopy>=0.24.1",
 ]
 doc = [
   "ipykernel",
