@@ -55,10 +55,15 @@ doc = [
   "sphinx-tabs==3.4.1",
 ]
 lint = [
-  "black",
-  "flake8"
+  "ruff"
 ]
 test = [
   "pytest",
   "pytest-cov",
 ]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]

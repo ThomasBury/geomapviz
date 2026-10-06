@@ -1,4 +1,4 @@
-name: BlackCov
+name: RuffCov
 
 on: [push, pull_request]
 
@@ -10,8 +10,13 @@ jobs:
         uses: actions/checkout@v2
       - name: Set up python
         uses: actions/setup-python@v2
+        with:
+          python-version: "3.12"
       - name: Lint
-        uses: psf/black@stable
+        run: |
+          python -m pip install ruff
+          ruff check src tests
+          ruff format --check src tests
       - name: Generate coverage report
         run: |
           conda install -c conda-forge cartopy
