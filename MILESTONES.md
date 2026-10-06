@@ -995,3 +995,29 @@ final PR head before merging. Record their commit and URLs in the review PR.
   fresh base/interactive installations from PyPI outside the checkout using
   `examples/verify_install.py`. Activate/build and verify `/en/v2.0.0/`, then
   make 2.0 the default. No merge, release tag or publication has occurred yet.
+
+
+### 2.0.0 candidate live results
+
+Opened [review PR #5](https://github.com/ThomasBury/geomapviz/pull/5) for the full
+`feat/v2.0.0` branch. Release candidate
+`c4f74dd4f98f37c4a24f26ac974ea2cc71c41244` passes both push and PR workflows:
+
+| Trigger | RuffCov | Distributions |
+| --- | --- | --- |
+| Push | [37468487585 — success](https://github.com/ThomasBury/geomapviz/actions/runs/37468487585) | [37468487623 — success](https://github.com/ThomasBury/geomapviz/actions/runs/37468487623) |
+| PR | [37468568841 — success](https://github.com/ThomasBury/geomapviz/actions/runs/37468568841) | [37468568910 — success](https://github.com/ThomasBury/geomapviz/actions/runs/37468568910) |
+
+Both Python versions and Codecov pass. Archive validation and all four isolated
+base/interactive wheel/source checks pass; publication stays skipped.
+[Hosted build 34969165](https://app.readthedocs.org/projects/geomapviz/builds/34969165/)
+succeeds for the same candidate. All six pages, including release notes, were
+fetched and identify 2.0.0; their release-note navigation links were inspected.
+Downloads are under `/tmp/geomapviz-release-2.0.0/hosted-candidate`.
+
+This evidence-only commit will trigger CI again; require those checks on the
+actual final PR head and record the URLs in the PR before merging. Browser
+hover/zoom/offline checks and the Read the Docs default change remain pending.
+No Read the Docs API token or browser is available. Its default was read back
+as `latest`; `stable` is still 1.1.3. CodeRabbit skipped the initial draft, so a
+successful CodeRabbit status on that draft does not constitute a review.
