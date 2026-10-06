@@ -184,6 +184,45 @@ M0–M2 are delivered as separate local Conventional Commits. PRD.md remains the
 user-supplied untracked file; M3–M6, publication, CI/CD and site documentation
 remain pending.
 
+## Tooling follow-up — Ruff complete, ty pending (2026-10-05)
+
+Replaced Black and Flake8 in the `lint` extra with Ruff. Ruff handles both
+linting and formatting; this migration is not a prerequisite for M3–M6.
+Renamed the Black workflow to `.github/workflows/ruff.yml`, set Python 3.12,
+and replaced its Black step with `ruff check src tests` and
+`ruff format --check src tests`. Updated the README badge and ignored Ruff's
+cache. Explicit lint rules are `E4,E7,E9,F`, with the existing 88-character
+formatting convention; the formatter handles wrapping without enforcing
+Flake8's 79-character limit. The only source change is a formatter-added blank
+line in `shapefiles.py`. The existing coverage setup is unchanged and has not
+been verified on GitHub.
+
+Verification with Ruff 0.16.10 installed in the project's `.venv`:
+
+- `.venv/bin/ruff check src tests` passes.
+- `.venv/bin/ruff format --check src tests` passes: seven files formatted.
+- `.venv/bin/python -m pytest -q` passes: 22 tests on CPython 3.12.7.
+- `git diff --check` passes.
+
+Add ty separately after the legacy renderer cleanup in M4. It adds type checking,
+rather than replacing linting or formatting. Check `src` against the project's
+installed dependencies and fix remaining type contracts without blanket
+suppressions. Require `ty check src` and the existing pytest suite to pass.
+
+Initial read-only review evidence (2026-10-02), using Ruff 0.16.2 and ty 0.0.71
+from existing local executables, with ty resolving dependencies from this
+project's `.venv`:
+
+- `ruff check --select E4,E7,E9,F src tests` passes.
+- `ruff format --check src tests` would reformat only `shapefiles.py`; six files
+  are already formatted.
+- Existing Flake8 7.4.1 reports 91 violations, all `E501` line-length complaints.
+- `ty check src --python .venv` reports 18 diagnostics; 17 concern legacy plotting
+  and shapefile modules. Defer their type cleanup until the retained code is clear.
+
+No tooling migration or type repairs were applied during that initial review.
+Ruff is now migrated; ty and type repairs remain deferred until after M4.
+
 ## M3 — complete: geography, coverage and parent areas (2026-10-05)
 
 Two public operations in the existing geometry module use user-supplied
