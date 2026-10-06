@@ -601,3 +601,188 @@ work, CI/CD and release publication remain outside M6.
 
 M0–M6 are complete. Existing Ruff migration changes and untracked PRD.md remain
 separate. No push, tag, publication or external service change was performed.
+
+
+## Documentation and CI phase — complete: Zensical 2.0 guide (2026-10-06)
+
+Replaced the branch's Sphinx site with five hand-authored Markdown pages:
+Quickstart, Aggregation, Geography, Plotting and export, and API and migration.
+All pages and the site header identify this as **2.0 development documentation**.
+The README now describes the current purpose, checkout installation, a runnable
+example and documentation links. The original migration table is in the API guide.
+Removed obsolete Sphinx configuration, reStructuredText, notebook, duplicated
+requirements and legacy screenshots/logo. Released tags and the published 1.x
+site were not changed; the existing hosted `/en/latest/` URL still returns 200.
+
+The contributor `docs` dependency group replaces the old `doc` extra and pins
+Zensical 0.0.68. There is no new runtime dependency, lockfile, custom theme,
+notebook execution or API-generation plugin. Runtime Python modules and the
+`interactive` extra are unchanged. The two committed example assets are copied
+from the existing prepared workflow's continuous exports: `comparison.png`
+and `comparison.html`. Trailing line whitespace in the generated HTML (bundled license comments and
+blank lines) is trimmed before committing; the site build only copies the assets.
+
+`zensical.toml` provides explicit navigation, the default theme and the canonical
+`https://geomapviz.readthedocs.io/` URL. Strict validation rejects missing pages
+and anchors. In this pinned release, non-Markdown asset targets are not checked
+by the builder; their existence, HTTP responses, image loading and export
+rendering were verified separately. See the official
+[Zensical validation guide](https://zensical.org/docs/setup/validation/).
+
+Read the Docs now uses Ubuntu 24.04/Python 3.12, bootstraps uv 0.12.15, installs
+only the docs group, builds with `zensical build --clean`, and copies `site/.`
+into `$READTHEDOCS_OUTPUT/html/`. The exact YAML-parsed install/build/copy commands
+passed locally in a fresh simulated Read the Docs environment. Command scalars
+containing `:all:` are quoted so YAML treats them as strings. This follows the
+[Read the Docs custom-build guide](https://docs.readthedocs.com/platform/stable/intro/zensical.html);
+no external project settings or default version were changed.
+
+CI replaces the old Conda block with uv installation of the local editable
+package and its `interactive`, `lint` and `test` extras. With uv 0.12.15,
+`--only-binary=:all:` alone rejects the local build; the verified command adds
+`--no-binary=geomapviz`, keeping that one build allowed and all dependencies
+binary-only. Existing Ruff gates, `pytest --cov=./ --cov-report=xml` and Codecov
+delivery are preserved.
+
+### Wheel availability and platform limits
+
+Refreshed wheel-only resolution using uv 0.12.15 and the actual base plus
+interactive requirements from `pyproject.toml`. These are availability checks,
+not runtime tests or a promise of all possible versions on those platforms.
+
+| Target | Python 3.12 | Python 3.14 |
+| --- | --- | --- |
+| Linux x86_64, glibc 2.28+ | Pass | Pass |
+| macOS Intel, macOS 13+ | Pass | Pass |
+| macOS Apple Silicon | Pass on macOS 13 | Pass on macOS 14+ |
+| Windows x86_64 | Pass | Pass |
+
+Apple targets used `MACOSX_DEPLOYMENT_TARGET=13.0`, except Apple Silicon with
+Python 3.14, which used `14.0`. The macOS 13 Apple Silicon/Python 3.12 resolution
+selects GeoPandas 1.1.4 and pyproj 3.6.1. Intel macOS selects pyproj 3.7.2 on both
+Python versions. Other cells select GeoPandas 1.2.0 and pyproj 3.8.0. The other
+versions in the runtime snapshot below are shared by all eight resolution cells.
+Windows also resolves colorama 0.4.6 and tzdata 2026.5, which are not needed on
+the Linux installation. These platform additions are included in its resolution logs.
+
+Actual fresh installations and rendering in this phase were on standard
+CPython 3.12.7, Linux x86_64/glibc 2.39. M6's earlier Python 3.14 runtime evidence
+remains separate. macOS, Windows, musl, ARM Linux and free-threaded Python were
+not runtime-tested here. Wheel availability depends on Python, architecture,
+OS minimums and future releases; no interpreter compilation was needed in this
+phase. M6's source compilation was for its Python interpreter, not GeoPandas or
+Cartopy. Prefer Python 3.12 with pip/uv; conda-forge remains an optional fallback
+for platforms lacking wheels. No demonstrated need justified a Pixi environment.
+[GeoPandas installation](https://geopandas.org/en/stable/getting_started/install.html),
+[Cartopy installation](https://cartopy.readthedocs.io/stable/installing.html), and
+[Pixi's uv comparison](https://pixi.prefix.dev/latest/switching_from/uv/)
+provide the native-dependency context.
+
+### Resolved versions
+
+The Linux base has 25 dependency distributions; interaction has 52. Both use
+Geomapviz `2.0.0.dev0`. Exact interactive runtime snapshot (base dependencies are
+contained in this list):
+
+```text
+bokeh==3.9.2 cartopy==0.26.0 certifi==2026.7.22 charset-normalizer==3.5.2
+cloudpickle==3.1.2 colorcet==3.2.1 contourpy==1.4.0 cycler==0.12.1 fonttools==4.66.1
+geopandas==1.2.0 geoviews==1.15.1 holoviews==1.23.2 idna==3.20 jinja2==3.1.6
+joblib==1.6.0 kiwisolver==1.5.1 linkify-it-py==2.2.0 mapclassify==2.11.0 markdown==3.11
+markdown-it-py==4.2.0 markupsafe==3.0.4 matplotlib==3.11.2 mdit-py-plugins==0.6.1
+mdurl==0.1.2 narwhals==2.26.0 networkx==3.7 nh3==0.3.7 numpy==2.5.3 packaging==26.3
+pandas==3.0.6 panel==1.9.4 panel-material-ui==0.16.0 param==2.4.2 pillow==12.3.0
+pyogrio==0.13.0 pyparsing==3.3.3 pyproj==3.8.0 pyshp==3.1.6 python-dateutil==2.9.0.post0
+pyviz_comms==3.0.6 pyyaml==6.0.3 requests==2.34.2 scikit-learn==1.9.1 scipy==1.18.1
+shapely==2.1.2 six==1.17.0 threadpoolctl==3.7.0 tornado==6.5.10 tqdm==4.70.1
+typing_extensions==4.16.0 urllib3==2.8.0 xyzservices==2026.9.1
+```
+
+The docs-only builder environment contains the following 11 distributions and none of
+Geomapviz, NumPy, pandas, GeoPandas, Matplotlib, mapclassify, HoloViews, GeoViews,
+Cartopy, Bokeh or Panel:
+
+```text
+click==8.5.0 deepmerge==3.0.1 jinja2==3.1.6 markdown==3.11 markupsafe==3.0.4
+pathspec==1.1.1 pygments==2.21.0 pymdown-extensions==12.1 pyyaml==6.0.3
+tomli==2.4.1 zensical==0.0.68
+```
+
+The simulated Read the Docs environment additionally has bootstrap pip 26.2.1
+and uv 0.12.15, with the same documentation dependencies and no runtime stack.
+
+The CI check also resolved Ruff 0.16.10, pytest 9.1.1, pytest-cov 7.1.0 and
+coverage 7.16.2. Browser verification used Playwright 1.63.0 with the existing
+Chromium headless shell 1217 in a separate temporary environment; it is not a
+project dependency.
+
+### Verification and reproduction
+
+All verification files, complete wheel-resolution logs, browser screenshots and
+exports remain under `/tmp/geomapviz-docs` for this local session.
+
+```sh
+# Fresh docs-only environment; no runtime stack or project installation.
+uv venv /tmp/geomapviz-docs/docs --python 3.12
+uv pip install --python /tmp/geomapviz-docs/docs/bin/python --only-binary=:all: --group docs
+/tmp/geomapviz-docs/docs/bin/zensical build --clean
+
+# Fresh CI environment; dependencies must be wheels.
+uv venv /tmp/geomapviz-docs/interactive --python 3.12
+uv pip install --python /tmp/geomapviz-docs/interactive/bin/python --only-binary=:all: --no-binary=geomapviz -e '.[interactive,lint,test]'
+/tmp/geomapviz-docs/interactive/bin/ruff check src tests examples
+/tmp/geomapviz-docs/interactive/bin/ruff format --check src tests examples
+/tmp/geomapviz-docs/interactive/bin/python -m pytest --cov=./ --cov-report=xml
+
+# Generate documentation assets from the existing synthetic workflow.
+/tmp/geomapviz-docs/interactive/bin/python examples/prepared_comparison.py --interactive --output /tmp/geomapviz-docs/example-exports
+
+# Build and install artifacts into separate environments.
+uv build --out-dir /tmp/geomapviz-docs/artifacts
+uv venv /tmp/geomapviz-docs/base --python 3.12
+uv pip install --python /tmp/geomapviz-docs/base/bin/python --only-binary=:all: /tmp/geomapviz-docs/artifacts/geomapviz-2.0.0.dev0-py3-none-any.whl
+uv venv /tmp/geomapviz-docs/wheel-interactive --python 3.12
+uv pip install --python /tmp/geomapviz-docs/wheel-interactive/bin/python --only-binary=:all: 'geomapviz[interactive] @ file:///tmp/geomapviz-docs/artifacts/geomapviz-2.0.0.dev0-py3-none-any.whl'
+
+# Repeat with each platform/Python cell; set MACOSX_DEPLOYMENT_TARGET on macOS.
+uv pip install --python /tmp/geomapviz-docs/docs/bin/python --dry-run --only-binary=:all: --python-version 3.12 --python-platform x86_64-manylinux_2_28 -r pyproject.toml --extra interactive
+```
+
+- Docs-only build reports no issues. Disposable copies containing a missing
+  Markdown page or anchor exit with status 1 in strict mode.
+- Headless Chromium checks all five pages at 1440×1000 and 390×844: navigation,
+  local links/resources, same-page anchors, tables with headers, image alt text
+  and successful image loading. Pages have no viewport overflow; code blocks
+  scroll inside their containers. Screenshots were inspected. Both layouts open
+  the HTML example without JavaScript errors. With all HTTP(S) requests blocked,
+  the file export still renders from its inline resources. The HTML example is
+  a fixed three-column layout, so narrow screens scroll horizontally; the guide
+  explains `ncols=1` for a narrower export.
+- All 12 runnable Python snippets from Quickstart, Aggregation, Geography,
+  Plotting/export and README execute against the fresh installed interactive
+  wheel. The caller-file example uses a temporary GeoPackage made from the
+  same synthetic boundaries. Arithmetic assertions and PNG/HTML exports pass.
+- Fresh base and interactive wheel installations pass `uv pip check` and the
+  existing `examples/verify_install.py` from copied examples outside the checkout
+  with `PYTHONPATH` removed. Package paths point into their environments. Base
+  mode has no interactive distributions; both modes export continuous/classified
+  PNGs, and interactive mode also exports inline HTML. The same checks retain
+  numerical import independence, parent arithmetic and application plotting styles.
+- Full interactive coverage command: **70 passed**, with the 12 existing
+  mapclassify pure-Python fallback warnings. The preserved whole-checkout coverage
+  scope records 888/957 lines (92.79%); it includes tests/examples, not only runtime
+  source. Ruff lint/format checks pass on `src tests examples`.
+- Final wheel: 14,683 bytes; source archive: 25,939 bytes. The wheel has exactly
+  five runtime modules plus metadata. Module bytes match checkout source; README
+  metadata matches the final guide links. The source archive retains examples and
+  tests; neither artifact bundles documentation exports or legacy geographic assets.
+  The obsolete `doc` extra is absent. The existing setuptools license-table
+  deprecation warning remains outside this migration.
+- `git diff --check` passes. No runtime implementation or test files were changed.
+
+This completes one local documentation/CI migration phase on `feat/v2.0.0`.
+Pushing, merging, activating a Read the Docs development preview, changing its
+published default version and publishing 2.0 remain separate delivery actions.
+When authorized, preview the feature branch and verify hosted navigation and
+asset downloads before changing the default version. The separate ty follow-up
+remains pending.
