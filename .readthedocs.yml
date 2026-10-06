@@ -8,10 +8,11 @@ build:
   jobs:
     install:
       - 'python -m pip install --only-binary=:all: uv==0.12.15'
-      - 'uv pip install --python "$READTHEDOCS_VIRTUALENV_PATH/bin/python" --only-binary=:all: --group docs'
+      - 'python -m uv venv "$READTHEDOCS_VIRTUALENV_PATH"'
+      - 'python -m uv pip install --python "$READTHEDOCS_VIRTUALENV_PATH/bin/python" --only-binary=:all: --group docs'
     build:
       html:
-        - zensical build --clean
+        - '"$READTHEDOCS_VIRTUALENV_PATH/bin/python" -m zensical build --clean'
     post_build:
       - mkdir -p "$READTHEDOCS_OUTPUT/html/"
       - cp -R site/. "$READTHEDOCS_OUTPUT/html/"
