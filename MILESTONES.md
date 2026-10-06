@@ -786,3 +786,65 @@ published default version and publishing 2.0 remain separate delivery actions.
 When authorized, preview the feature branch and verify hosted navigation and
 asset downloads before changing the default version. The separate ty follow-up
 remains pending.
+
+## Release plan, Phase 1 — local CI and ty implementation complete (2026-10-06)
+
+Updated `.github/workflows/ruff.yml` to test Linux Python 3.12 and 3.14. Both
+jobs install the `interactive`, `lint` and `test` extras, check Ruff lint/format
+on `src tests examples`, check types on `src`, and run the existing test suite.
+The uv 0.12.15 installer and wheel-only policy are retained, including the local
+editable Geomapviz build exception. Added `ty==0.0.84` to `lint` and
+`[tool.ty.src] include = ["src"]`; the workflow explicitly resolves imports
+against its `.venv`. No runtime source, public API or regression tests changed.
+
+Only Python 3.12 generates coverage, now with `--cov=geomapviz`. A named
+`coverage` artifact transfers `coverage.xml` to a separate Codecov job after
+both Python jobs pass. Only that job has `id-token: write`; it uses OIDC,
+`files: coverage.xml`, `disable_search: true` and `fail_ci_if_error: true`.
+The pinned action natively disables OIDC for fork PRs, selects their tokenless
+branch label, and associates PR uploads with the head commit. No token secret
+or custom branch override is configured. Dependabot actors and PR authors skip
+artifact/Codecov uploads while retaining lint, type and test checks.
+
+Both jobs have 20-minute timeouts; superseded runs on the same workflow/ref are
+cancelled, and both checkouts disable persisted credentials. Added weekly
+GitHub Actions updates to the existing Dependabot configuration.
+
+Release tags were resolved through the GitHub API to immutable commits:
+
+- checkout 7.0.1: `3d3c42e5aac5ba805825da76410c181273ba90b1`.
+- setup-python 7.0.0: `5fda3b95a4ea91299a34e894583c3862153e4b97`.
+- Codecov 7.1.1: `303a32d7a59b442fa8d48b6a1cc6825c09c847a5`
+  (peeled from its annotated release tag).
+- upload-artifact 7.0.1: `043fb46d1a93c77aae656e7c1c64a875d1fc6a0a`.
+- download-artifact 8.0.1: `3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c`.
+
+Verification used fresh temporary environments under
+`/tmp/geomapviz-release-phase1`, with uv 0.12.15 and the same wheel-only editable
+install command as CI. CPython 3.12.7 and 3.14.8 each installed 61 distributions;
+`uv pip check` passes on both. Ruff 0.16.10 lint and format checks pass on all
+11 source/test/example files, and ty 0.0.84 passes against both environments.
+No type suppressions or source repairs were necessary.
+
+- Python 3.12.7: `python -m pytest --cov=geomapviz --cov-report=xml` —
+  **70 passed**, 12 existing mapclassify pure-Python fallback warnings.
+  The XML records **364/379 lines (96.04%)**, containing only the five runtime
+  modules under `src/geomapviz`; the local report is at
+  `/tmp/geomapviz-release-phase1/coverage.xml`.
+- Python 3.14.8: `python -m pytest` — **70 passed**, the same 12 warnings.
+- `actionlint .github/workflows/ruff.yml` passes with actionlint 1.7.12;
+  `git diff --check` passes.
+- The pinned Codecov action's actual fork/branch/commit shell steps passed
+  synthetic push, same-repository PR and fork PR checks. Its OIDC guard was
+  inspected to confirm forks do not request an identity token. This verifies
+  local routing, not authentication or acceptance by Codecov.
+
+Configuration references:
+[ty environment discovery](https://docs.astral.sh/ty/type-checking/#environment-discovery),
+[Codecov authentication](https://docs.codecov.com/docs/codecov-tokens), and
+[the pinned Codecov action](https://github.com/codecov/codecov-action/blob/v7.1.1/action.yml).
+
+Phase 1 implementation and local checks are complete. Live GitHub matrix runs,
+artifact transfer and successful Codecov delivery for the correct commit still
+require a pushed run; none is claimed here. Stop after this phase. Phase 2
+metadata/publishing setup, the hosted preview and the 2.0 release remain pending.

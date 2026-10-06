@@ -44,7 +44,8 @@ interactive = [
   "cartopy>=0.24.1",
 ]
 lint = [
-  "ruff"
+  "ruff",
+  "ty==0.0.84",
 ]
 test = [
   "pytest",
@@ -59,3 +60,6 @@ line-length = 88
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F"]
+
+[tool.ty.src]
+include = ["src"]
