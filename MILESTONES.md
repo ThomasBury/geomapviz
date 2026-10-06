@@ -917,3 +917,81 @@ Stop for review after this phase. Phase 2 changes are committed locally for
 review. No push, release tag or PyPI upload was made. Live workflow artifact
 transfer, PyPI OIDC authentication and publishing remain untested; the hosted
 documentation preview and release delivery remain separate work.
+
+
+## Review PR and 2.0.0 preparation — in progress (2026-10-06)
+
+### Live verification of the development head
+
+Verified commit `73db4bdb25312b9768d62747df0250bc09d56fcd` through the live
+GitHub and Read the Docs APIs:
+
+- [RuffCov run 37466813065](https://github.com/ThomasBury/geomapviz/actions/runs/37466813065)
+  passes Python 3.12 and 3.14 lint, formatting, types and tests. The coverage
+  artifact transfer and Codecov OIDC upload pass; the log identifies
+  [this exact commit](https://app.codecov.io/github/ThomasBury/geomapviz/commit/73db4bdb25312b9768d62747df0250bc09d56fcd)
+  and reports the upload queued for processing. Final Codecov processing is
+  distinct from successful upload acceptance.
+- [Distributions run 37466812993](https://github.com/ThomasBury/geomapviz/actions/runs/37466812993)
+  passes archive build/strict validation and all four wheel/source, base/interactive
+  installation jobs. Artifact transfer works. Publishing is skipped on this
+  branch push, as intended; this does not verify PyPI publication.
+- [Read the Docs build 34968876](https://app.readthedocs.org/projects/geomapviz/builds/34968876/)
+  succeeds for the same commit. Its
+  [feature preview](https://geomapviz.readthedocs.io/en/feat-v2.0.0/)
+  serves Quickstart, Aggregation, Geography, Plotting/export and API/migration.
+  All five pages and both linked example downloads were fetched successfully;
+  their guide links and image alt text were inspected. The downloaded PNG has
+  identical decoded RGB pixels to the committed image. The hosted HTML differs
+  only by the injected Read the Docs addon script and version metadata.
+
+Browser verification remains pending: no browser surface is connected, and
+both Chrome and in-app browser creation report unavailable. The earlier local
+headless rendering evidence remains recorded above, but does not complete the
+requested hosted hover/zoom and downloaded offline HTML check. Downloading an
+asset and inspecting its inline resources is not a browser interaction test.
+Downloaded evidence is under `/tmp/geomapviz-release-2.0.0/hosted`.
+
+### Release content
+
+Changed the dynamic version source to `2.0.0`. README and guide now give pinned
+PyPI base/interactive installation commands and identify the 2.0.0 API, with
+versioned documentation links. Added [release notes](docs/release-notes.md)
+covering Python minimum, removed APIs/assets/options, explicit totals/rates,
+strict cohort/geography validation, parent reaggregation, optional interaction,
+metadata preservation and platform limits. Historical development-version
+records above remain unchanged as evidence of what was actually tested then.
+The release wording describes the candidate; PyPI still reports 1.1.3.
+
+Local candidate checks pass: the six-page strict Zensical build, Ruff lint and
+format on `src tests examples`, ty against the existing Python 3.12 verification
+environment, and all **70 tests** (12 existing mapclassify fallback warnings).
+`uv build` produces `geomapviz-2.0.0` wheel/source artifacts under
+`/tmp/geomapviz-release-2.0.0/artifacts`; `twine check --strict` passes for both.
+`git diff --check` passes. No runtime behavior or dependency bounds changed.
+
+Green checks on the development head do not approve the release candidate.
+Require fresh RuffCov and Distributions success, plus the hosted build, for the
+final PR head before merging. Record their commit and URLs in the review PR.
+
+### Required order before publication
+
+- Finish hosted hover/zoom and downloaded HTML rendering with network disabled.
+- Review the PR and resolve review findings; do not merge an unreviewed candidate.
+- Change the Read the Docs default from `latest` to `stable` and read it back.
+  The current `stable` ref is 1.1.3 at
+  `3d1d45e31809135f7cab8d76e1e38838385ba1b2`, active and built. No default
+  setting has been changed by this session. Merging while `latest` is the
+  default would replace the default 1.x guide before PyPI publication.
+- Read the Docs automatically tracks the newest release tag with `stable`.
+  Activate/build the explicit 1.1.3 version and temporarily pin the default to
+  1.1.3 before pushing `v2.0.0`, so the default stays on 1.x during publication
+  and verification. Return the default to `stable` only after the 2.0 checks.
+  See [versioning documentation](https://docs.readthedocs.com/platform/stable/versions.html).
+- Merge only after review, the browser check, default preservation and green
+  final-head CI. Require green CI for the merged commit too, then tag that
+  exact commit `v2.0.0` and push the tag.
+- Wait for tag distribution checks, approve the protected `pypi` job and verify
+  fresh base/interactive installations from PyPI outside the checkout using
+  `examples/verify_install.py`. Activate/build and verify `/en/v2.0.0/`, then
+  make 2.0 the default. No merge, release tag or publication has occurred yet.
