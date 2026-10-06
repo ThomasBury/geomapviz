@@ -2,7 +2,7 @@
 
 **Geomapviz 2.0.0 documentation.** Python 3.12+ is required.
 This reference is hand-authored;
-the [Quickstart](index.md) provides a runnable comparison.
+the [Quickstart](quickstart.md) provides a runnable comparison.
 
 ## Preparation functions
 
@@ -117,3 +117,11 @@ Select a common finite cohort, supply valid weights/exposure, and check coverage
 before plotting. Zero-support observed areas and unknown IDs fail explicitly;
 unobserved boundaries remain missing. Preserve summary metadata for support
 names and quantity-specific scales; CSV does not retain it.
+
+The geographic teaching workflows from 1.1.3 are rebuilt in the
+[Examples gallery](examples/index.md) with the v2 API and separate downloadable
+data. Country loaders, category conversion, tile layers, raster backgrounds,
+normalization controls and confidence intervals remain unsupported. Load files
+with GeoPandas, choose explicit cohorts, and use native Matplotlib when a separate
+comparison scatterplot helps. Neither record counts nor exposure panels estimate
+uncertainty: intervals require a statistical model beyond this plotting API.

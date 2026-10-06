@@ -12,7 +12,10 @@ build:
       - '"$READTHEDOCS_VIRTUALENV_PATH/bin/python" -m uv pip install --python "$READTHEDOCS_VIRTUALENV_PATH/bin/python" --only-binary=:all: --group docs'
     build:
       html:
+        - mkdir -p docs/downloads
+        - 'cd examples && "$READTHEDOCS_VIRTUALENV_PATH/bin/python" -m zipfile -c ../docs/downloads/geographic-examples.zip geographic_gallery.py check_geographic_gallery.py GEOGRAPHIC_EXAMPLES.md data'
         - '"$READTHEDOCS_VIRTUALENV_PATH/bin/python" -m zensical build --clean'
+        - '"$READTHEDOCS_VIRTUALENV_PATH/bin/python" examples/check_documentation.py'
     post_build:
       - mkdir -p "$READTHEDOCS_OUTPUT/html/"
       - cp -R site/. "$READTHEDOCS_OUTPUT/html/"

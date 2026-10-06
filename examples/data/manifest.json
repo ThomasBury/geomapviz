@@ -1,0 +1,86 @@
+{
+  "retrieved": "2026-10-06",
+  "belgium": {
+    "crs": "EPSG:31370",
+    "boundary_vintage": 2022,
+    "sectors": 19795,
+    "municipalities": 581,
+    "arrondissements": 43,
+    "regions": 3,
+    "fields": {
+      "CNIS5_2024": "mun_id",
+      "T_MUN_NL": "name_nl",
+      "T_MUN_FR": "name_fr",
+      "T_MUN_DE": "name_de",
+      "CNIS_ARRD_": "arr_id",
+      "T_ARRD_NL": "arr_nl",
+      "T_ARRD_FR": "arr_fr",
+      "CNIS_REGIO": "reg_id",
+      "T_REGIO_NL": "reg_nl",
+      "T_REGIO_FR": "reg_fr"
+    }
+  },
+  "netherlands": {
+    "crs": "EPSG:28992",
+    "year": 2024,
+    "postcodes": 4071,
+    "valid_population_cohort": 3968,
+    "excluded_population_cohort": 103,
+    "fields": {
+      "postcode": "postcode",
+      "jaarcode": "year",
+      "aantal_inwoners": "residents",
+      "aantal_inwoners_0_tot_15_jaar": "under15",
+      "aantal_inwoners_65_jaar_en_ouder": "age65plus"
+    }
+  },
+  "sources": [
+    {
+      "url": "https://statbel.fgov.be/sites/default/files/files/opendata/Statistische%20sectoren/sh_statbel_statistical_sectors_31370_20240101.shp.zip",
+      "file": "statbel-sectors-2024.zip",
+      "sha256": "73286b8e2f1d71e5ca8bb675e0f6fd67257f9bc23b4c28b141a9c79386c97d39"
+    },
+    {
+      "url": "https://api.pdok.nl/cbs/postcode4/ogc/v1/collections/postcode4/items?f=json&jaarcode=2024&limit=1000&crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F28992",
+      "file": "pdok-2024-page-001.json",
+      "sha256": "483ba255d6e79fa14ba4e704a95ed12cb6cbecd294dcc5212dd931ea38888730"
+    },
+    {
+      "url": "https://api.pdok.nl/cbs/postcode4/ogc/v1/collections/postcode4/items?crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F28992&cursor=ktU%7CB2CvIg&f=json&jaarcode=2024&limit=1000",
+      "file": "pdok-2024-page-002.json",
+      "sha256": "2ed94ff5343f5427a07d5cca2238bfcdcd2d963084964a4b846614d0e13ee517"
+    },
+    {
+      "url": "https://api.pdok.nl/cbs/postcode4/ogc/v1/collections/postcode4/items?crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F28992&cursor=lr0%7CB2CvIg&f=json&jaarcode=2024&limit=1000",
+      "file": "pdok-2024-page-003.json",
+      "sha256": "5dd477cec96ae88c420c127485be76347b028897eae453ea1da7d2b22920f313"
+    },
+    {
+      "url": "https://api.pdok.nl/cbs/postcode4/ogc/v1/collections/postcode4/items?crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F28992&cursor=mqU%7CB2CvIg&f=json&jaarcode=2024&limit=1000",
+      "file": "pdok-2024-page-004.json",
+      "sha256": "8ad903243511b23f9a1f8bfc4e42ca23ce5ae711f33ded1c25587a2719e2c342"
+    },
+    {
+      "url": "https://api.pdok.nl/cbs/postcode4/ogc/v1/collections/postcode4/items?crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F28992&cursor=no0%7CB2CvIg&f=json&jaarcode=2024&limit=1000",
+      "file": "pdok-2024-page-005.json",
+      "sha256": "94b50e3b9a422f280b1cd12d6b4b9d73afe0ee50b576c963e2da947e3056ef45"
+    },
+    {
+      "url": "https://statbel.fgov.be/sites/default/files/files/opendata/Licence%20open%20data_EN.pdf",
+      "file": "statbel-open-data-licence.pdf",
+      "sha256": "2b37f35665a671d3b7634447d8486bc2470c14597a3c84b92a183eacc112fec5"
+    },
+    {
+      "url": "https://creativecommons.org/licenses/by/4.0/legalcode.txt",
+      "file": "cc-by-4.0.txt",
+      "sha256": "9ba9550ad48438d0836ddab3da480b3b69ffa0aac7b7878b5a0039e7ab429411"
+    }
+  ],
+  "outputs": {
+    "belgium_municipalities_2024.zip": "42729ad590b1df7f856e229bc2dadd4debc707666b9493a703412ea26a6c18f9",
+    "cc-by-4.0.txt": "9e5f1b3c610b9c2da5c313bf81d577a7d1acec686bdb0384edefa6df0f90cd94",
+    "netherlands_population_2024.csv": "75bf15af7ed273018b366d0b61021aeec49546908bad0a2d72f4df01d66e31dd",
+    "netherlands_postcode4_2024.zip": "1263d5d472bfa66b6a42e33bef2618a74a495e32c33fdb999f292d3e7a68753e",
+    "statbel-open-data-licence.pdf": "2b37f35665a671d3b7634447d8486bc2470c14597a3c84b92a183eacc112fec5"
+  }
+}

@@ -1102,3 +1102,149 @@ performance or statistical calibration.
 The runnable check, archive checksum, numerical evidence, PNG/HTML exports and
 offline browser results are recorded in
 `/tmp/geomapviz-real-data/trial-report.md`. No runtime source was changed.
+
+## Geographic documentation restoration — phase 1 complete (2026-10-06)
+
+Added complete, documented geographic snapshots under `examples/data/`:
+
+- Statbel's 19,795 statistical sectors for 2024 dissolved into 581 municipality
+  polygons, preserving EPSG:31370 and the underlying 2022 boundary vintage.
+  Source attributes retain municipality names and explicit mappings to 43
+  arrondissements and three regions. The English redistribution licence is included.
+- CBS / PDOK's 2024 postcode4 collection, retrieved by `jaarcode=2024` and all
+  five response pages in EPSG:28992: 4,071 unique postcode polygons stored with
+  text identifiers. Selected published resident/age counts are retained in a
+  companion CSV, including original suppression codes. CC BY 4.0 attribution
+  and licence text are included.
+- Both ZIPs contain `.shp`, `.shx`, `.dbf`, `.prj` and UTF-8 `.cpg` sidecars.
+  No simplification or geometry repair was applied. `manifest.json` records
+  retrieval date, URLs, source/output checksums, field mappings and counts.
+  `prepare_snapshots.py` documents and implements the preprocessing; its network
+  access is confined to snapshot maintenance, never gallery execution.
+
+`examples/geographic_gallery.py` is the canonical runner for `belgium`,
+`aggregation`, `rates`, `netherlands`, `demographics` and default `all`.
+It exports 14 PNGs, record/summary CSVs and metadata/coverage JSON, with
+`--interactive` adding 13 inline standalone HTML pages. All simulated values
+and predictions are labelled, use projected-coordinate patterns, a fixed seed,
+unequal record counts and strictly positive exposure. Parent means are recomputed
+from original records; geometry dissolution is separate. Rate maps deliberately
+distinguish missing Antwerpen, an observed zero in Brussels and an undefined
+east-model ratio in Charleroi. The CBS common cohort includes 3,968 postcodes;
+all 103 excluded boundaries remain visible with missing metrics.
+
+The runner reuses the existing v2 APIs without runtime source changes. Native
+Matplotlib normalization shares the scale across administrative levels. For
+HTML, native HoloViews polygons retain the already projected GeoViews data and
+options, avoiding redundant Cartopy projection. Figure cycles are collected
+between full-detail exports. Full geometry makes HTML large (5–93 MB per page)
+and rendering slower; mapclassify's existing pure-Python fallback also remains.
+No new runtime dependency or documentation framework was introduced.
+
+Verification evidence is under `/tmp/geomapviz-gallery-phase1/`:
+
+- A roughly 23 MB temporary reproduction ZIP was created with Python's
+  standard `zipfile` CLI and extracted outside the checkout. All five cases ran
+  in published PyPI `geomapviz==2.0.0` base and interactive installations with
+  `uv run --no-project --python 3.12`. The base environment contains no optional
+  interactive packages. A separate launch from `/tmp` verifies script-relative
+  data paths. Exact `2.0.1` commands remain a phase 3 publication check.
+- `check_geographic_gallery.py --exports ../base ../interactive` passes snapshot
+  checksums, unique text IDs, CRS, valid polygons, complete parent mappings,
+  coverage, independent NumPy means/rate calculations and original-record parent
+  totals/weights. Both modes' exported CSVs match these calculations. Zero,
+  missing coverage and undefined ratios retain their distinct meanings.
+- PNGs were visually inspected for extent, legends, scales and classification.
+  All 14 PNGs have identical hashes between the two installation modes. All 13
+  HTML pages pass hover, pan, zoom and reset in local Chromium with the browser
+  offline and HTTP(S) requests blocked. Browser checks live only in the temporary
+  verification directory; they add no example installation dependency.
+- Existing pytest: 70 pass. Ruff lint and formatting on `src tests examples`,
+  ty 0.0.84 against `src`, strict Zensical build, `git diff --check`, `uv build`
+  and `twine check --strict` pass. The final wheel is 14,205 bytes; the source
+  archive is 30,910 bytes. Neither contains geographic data or rendered assets;
+  `MANIFEST.in` explicitly prunes `examples/data`.
+- Reproduction archive checks confirm the runner, numerical checker, instructions,
+  both data ZIPs, population CSV, provenance and licences are present without
+  bytecode caches. The generated bundle and renders remain untracked in `/tmp`.
+
+This is the phase 1 review boundary. Phase 2 owns illustrated Markdown tutorials,
+homepage/README, navigation, source snippets, selected committed previews/HTML
+and site bundle generation. Phase 3 owns version 2.0.1, release checks and deployed
+gallery/download verification. No push, tag or publication was performed here;
+the existing 1.1.3 and 2.0.0 archives are unchanged.
+
+## Geographic documentation restoration — phase 2 complete (2026-10-06)
+
+Added five illustrated Markdown walkthroughs under `docs/examples/`: Belgian
+geographic means, changing administrative scale and rate comparisons; Dutch
+postcode patterns and measured CBS age percentages. Each includes rendered
+results, reproduction commands, canonical source snippets, data provenance and
+an explanation of what to look for. The tutorials explain positive weights,
+original-record parent aggregation, separate dissolve, comparison scales and
+classification, and distinct zero/missing/undefined outcomes. CBS denominators,
+rounded counts, suppression and the common 3,968-postcode cohort are explicit;
+all 103 excluded boundaries remain visible. Support counts/exposure are never
+presented as uncertainty.
+
+The homepage and README lead with recognizable Belgian geography, a working
+example and installation immediately afterwards. Navigation follows Overview,
+Quickstart, Examples, Guides, API and migration, Release notes. Aggregation,
+geography and plotting guides refer to the geographic tutorials; rectangles
+remain in a compact arithmetic reference. Migration guidance distinguishes the
+restored teaching workflows from unsupported 1.x features. The current Zensical
+version and theme are unchanged; source snippets come directly from the canonical
+runner through its supported PyMdown extension.
+
+Committed all 14 PNG previews and five selected standalone HTML views under
+`docs/assets/geographic/`. Embeds have descriptive titles, previews, full-page
+and download links, and load explicitly when their disclosure is opened.
+Native responsive HoloViews sizing retains equal geographic coordinate units
+and the existing colors, hover tools and missing-value styling. This fixes the
+native polygon adapter's inherited fixed dimensions and missing aspect setting,
+which otherwise clipped or distorted maps in some panels. Full geometry remains
+unchanged; no simplification, runtime dependency or documentation framework was
+introduced. The package APIs are unchanged.
+
+Read the Docs and contributor commands create the roughly 23 MB reproduction ZIP
+with Python's standard `zipfile` CLI before the site build. Passing the `data`
+directory preserves paths; individually listed files would be flattened by the
+CLI. The generated bundle remains ignored/untracked. The dependency-free
+`examples/check_documentation.py` checks expanded canonical snippets, site links,
+titled deferred embeds, copied previews, exact bundle contents and all shapefile
+sidecars; Read the Docs runs it after the strict build.
+
+Verification evidence is under `/tmp/geomapviz-gallery-phase2/`:
+
+- The site bundle was extracted outside the checkout. Every case ran in the
+  published 2.0.0 base and interactive installations with Python 3.12,
+  `uv run --no-project`, local data and no example server. The final interactive
+  run is in `native/`. The final view documents are in `auto/`: the canonical
+  `geographic_ranges` hook was applied to those already rendered, full-detail
+  Bokeh documents without recomputing data or classification. A direct runner
+  check in `auto-direct-final/` verifies the same hook on all aggregation levels.
+  Independent snapshot, coverage, means, rates, original-record parent totals
+  and weights, and CBS cohort checks pass against both modes' exported CSVs.
+- All 14 committed PNGs have identical hashes to the base and final interactive
+  exports. All 13 final HTML views pass hover, pan, box zoom and reset with
+  external HTTP(S) requests blocked. `browser-final-all.json` records results;
+  HTTP(S) requests were blocked, with no page errors (52 attempted requests
+  in these final Bokeh documents). The original HoloViews exports also work
+  offline when their optional stylesheet requests are blocked.
+  Continuous ranges, palettes, class ticks and interval labels match phase 1.
+- Selected embeds fit desktop and mobile widths. Actual pixels per coordinate
+  unit match on both axes to within 1e-6. Native Bokeh `DataRange1d` models are
+  required for this: fixed HoloViews ranges ignore `match_aspect` on resize.
+  The canonical hook preserves geographic aspect and native pan/zoom/reset.
+  Desktop/mobile overview, tutorial images and open embeds were visually
+  inspected. A closed embed makes no HTML request; opening it loads the map.
+- Existing pytest: 70 pass. Ruff lint/format, ty 0.0.84 against `src`, strict
+  Zensical builds and the documentation integrity check pass. `uv build` and
+  `twine check --strict` pass. The wheel is 13,973 bytes; the source archive is
+  31,872 bytes. Neither includes geographic data, PNG/HTML previews or the bundle.
+
+This is the phase 2 review boundary. Version references remain at the published
+2.0.0 release, with forthcoming 2.0.1 commands already explained in the bundle.
+Phase 3 owns the version/reference update, 2.0.1 release checks, publication and
+deployed gallery/download verification. No push, tag or publication was performed;
+the archived 1.1.3 and 2.0.0 documentation is untouched.

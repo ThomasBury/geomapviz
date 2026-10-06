@@ -1,103 +1,76 @@
 # Geography
 
-**Geomapviz 2.0.0 documentation.** Geomapviz uses caller-supplied boundaries.
-No country files, raster backgrounds or sample datasets are bundled.
+Geomapviz uses caller-supplied boundaries. The installed package contains no
+country files; the separate [examples bundle](examples/index.md) supplies frozen
+Belgian municipalities and Dutch postcodes with complete source attribution.
+Use native GeoPandas to load files and dissolve polygons.
 
 ## Boundaries and identifiers
 
-Continue in the same Python session as the [Quickstart](index.md#a-complete-synthetic-comparison),
-using its synthetic records, summary and four boundaries.
-The boundary frame must have one non-missing, unique ID per area, an active
-geometry column, a declared coordinate reference system (CRS), and valid,
-non-empty geometries. Plotting requires polygons or multipolygons.
+Start with the canonical runner's local loader:
 
-Duplicate boundary IDs require an explicit GeoPandas `dissolve` first.
-Summary IDs must also be unique. Overlapping column names other than the ID
-raise an error rather than silently adding suffixes.
+```python
+--8<-- "examples/geographic_gallery.py:load"
+```
 
-Geography preparation normalizes strings and finite numeric IDs to strings.
-Categorical labels and leading zeros survive: `"001"` remains `"001"`.
-Numeric `1` and `1.0` match `"1"`, but neither matches `"001"`.
-Load padded identifiers as strings at ingestion; missing zeros cannot be inferred.
+`DATA` resolves beside the script. Each boundary frame needs one non-missing,
+unique ID per area, an active geometry column, a declared coordinate reference
+system (CRS), and valid non-empty geometry. Plotting requires polygons or
+multipolygons. Repeated IDs need an explicit GeoPandas `dissolve` first.
+Summary IDs must also be unique; overlapping attribute names other than the ID
+fail rather than acquiring implicit suffixes.
+
+The [postcode example](examples/netherlands.md) preserves identifiers as text.
+Preparation normalizes strings and finite numeric IDs to strings, retaining
+categorical labels and leading zeros. Numeric `1` and `1.0` match `"1"`, but
+neither matches `"001"`. Load padded IDs as strings at ingestion; omitted zeros
+cannot be inferred.
 
 ## Coordinate reference systems
 
-A CRS describes how coordinates relate to locations on Earth. Preparation
-preserves the boundary CRS and does not change your input frame. Static plots
-use the prepared CRS. The interactive renderer transforms a copy to EPSG:3857
-(Web Mercator) at the rendering boundary.
+A CRS relates coordinates to locations on Earth. Belgian boundaries retain
+**EPSG:31370**; Dutch boundaries retain **EPSG:28992**. Both use projected metres,
+so their centroids supply the simulated patterns. The
+[data descriptions](examples/index.md#code-and-data) distinguish publication
+year from historical boundary vintage.
 
-Use GeoPandas `to_crs` if you want another static projection. `set_crs` labels
-existing coordinates; it does not transform them. Assign a missing CRS only
-when you know the source coordinate system.
+Preparation preserves CRS and caller data. Static plots use the prepared CRS;
+interaction transforms a copy to EPSG:3857 (Web Mercator) at rendering.
+GeoPandas `to_crs` transforms coordinates; `set_crs` only labels them. Assign a
+missing CRS only when you know the source system. Never relabel projected metres
+as longitude and latitude.
 
 ## Coverage
 
-`prepare_geography` joins summaries onto all boundaries. Any observation ID
-without a boundary raises an error. Boundaries without observations remain
-in the output with `NaN` metrics and support, preserving the geographic extent.
+`prepare_geography(summary, boundaries, geoid)` joins onto **all boundaries**.
+Observation IDs without boundaries fail. Boundaries without observations retain
+`NaN` metrics and support, preserving extent. Coverage metadata lists matched
+and unmatched boundary IDs in boundary order, alongside summary metadata.
 
-```python
-# Continue from the Quickstart's summary and boundaries.
-mapped = prepare_geography(summary, boundaries, "area")
-assert mapped.attrs["coverage"] == {
-    "matched": ["001", "002", "003"],
-    "unmatched": ["004"],
-}
-assert mapped.loc[mapped["area"] == "004", "loss"].isna().all()
-assert mapped.crs == boundaries.crs
-```
-
-Coverage metadata lists matched and unmatched boundary IDs in boundary order.
-An unmatched boundary is missing information, not a zero observed rate.
-Summary metadata is retained alongside coverage.
+In [Belgian rates](examples/rates.md), Antwerpen remains visibly missing.
+In [CBS percentages](examples/demographics.md), all 103 excluded postcode
+boundaries remain visible. Missing coverage is not a measured zero or a reason
+to remove an area from the map. Inspect each export's JSON coverage and CSV rows.
+The [arithmetic reference](arithmetic.md) supplies a four-rectangle check.
 
 ## Parent areas
 
-`assign_parent` copies the original records and assigns a parent ID using the
-validated base-boundary mapping. It requires one non-missing parent per base ID;
-if records already have parent labels, they must agree. Base IDs, row order,
-index and metrics remain intact.
+[Changing geographic scale](examples/aggregation.md) uses explicit Statbel
+municipality-to-arrondissement/region attributes. Never infer those mappings
+from ID prefixes. `assign_parent` validates one non-missing parent per base ID,
+copies original records and assigns parent labels; existing labels must agree.
+It preserves base IDs, row order, index and metrics.
 
-Aggregate the assigned original records, then dissolve the boundary geometries
-separately. Never average child-area means or ratios: their denominators differ.
-Using the Quickstart data:
-
-```python
-from geomapviz import aggregate_rates, assign_parent, prepare_geography
-
-parent_boundaries = boundaries.assign(region=["north", "north", "south", "empty"])
-parent_records = assign_parent(records, parent_boundaries, "area", "region")
-parent_summary = aggregate_rates(
-    parent_records, "region", "loss", ["model_a", "model_b"], "exposure"
-)
-regions = parent_boundaries[["region", parent_boundaries.geometry.name]].dissolve(
-    by="region", as_index=False
-)
-parent_map = prepare_geography(parent_summary, regions, "region")
-north = parent_summary.set_index("region").loc["north"]
-assert north["loss_total"] == 48
-assert north["total_weight"] == 6
-assert north["loss"] == 8
-assert north["model_a"] == 9
-```
-
-The north observed rate is `48 / 6 = 8`, whereas averaging the child rates
-`10` and `4` would incorrectly give `7`. The `empty` parent boundary remains
-missing. See [Aggregation](aggregation.md) for denominator and support rules.
+Aggregate those original records, then dissolve geometry separately by the same
+parent ID. The tutorial includes the actual canonical code. Averaging child
+means or ratios ignores unequal denominators. A parent boundary can remain
+missing if none of its children have records.
 
 ## Load your own boundaries
 
-Load a boundary file with `geopandas.read_file`, choose its geographic ID column,
-and pass only needed boundary attributes to `prepare_geography`.
-With an existing aggregate `summary` whose area IDs occur in the file:
-
-```python
-import geopandas as gpd
-from geomapviz import prepare_geography
-
-file_boundaries = gpd.read_file("boundaries.gpkg")
-file_mapped = prepare_geography(
-    summary, file_boundaries[["area", file_boundaries.geometry.name]], "area"
-)
-```
+Use `geopandas.read_file` for your shapefile ZIP, GeoPackage or another supported
+format. Select the ID and needed attributes, preserve CRS, and validate the
+one-row-per-ID grain before preparing an existing summary. Extra attributes can
+supply administrative mappings or readable names; they should not collide with
+metric columns. Follow the same [independent checks](examples/index.md#numerical-checks)
+for IDs, polygon validity, parent mappings and boundary coverage.
