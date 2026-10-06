@@ -1,0 +1,123 @@
+name: Distributions
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Build and validate distributions
+        run: |
+          python -m pip install --only-binary=:all: uv==0.12.15
+          uv build
+          uv tool run twine check --strict dist/*
+      - name: Save distributions
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: distributions
+          path: dist/*
+          if-no-files-found: error
+
+  verify:
+    name: ${{ matrix.distribution }} / ${{ matrix.mode }}
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        distribution: [whl, tar.gz]
+        mode: [base, interactive]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Download distributions
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: distributions
+          path: dist
+      - name: Install distribution and check outside the checkout
+        run: |
+          python -m pip install --only-binary=:all: uv==0.12.15
+          uv venv --python 3.12
+          archives=(dist/*.${{ matrix.distribution }})
+          package="${archives[0]}"
+          flags=()
+          source_flags=()
+          if [[ '${{ matrix.distribution }}' == tar.gz ]]; then
+            source_flags+=(--no-binary=geomapviz)
+          fi
+          if [[ '${{ matrix.mode }}' == interactive ]]; then
+            package="geomapviz[interactive] @ file://$PWD/$package"
+            flags+=(--interactive)
+          fi
+          uv pip install --only-binary=:all: "${source_flags[@]}" "$package" pytest
+          uv pip check
+          cp -r examples "$RUNNER_TEMP/examples"
+          cp -r tests "$RUNNER_TEMP/tests"
+          cd "$RUNNER_TEMP"
+          if [[ '${{ matrix.mode }}' == interactive ]]; then
+            env -u PYTHONPATH "$GITHUB_WORKSPACE/.venv/bin/python" -m pytest tests
+          fi
+          env -u PYTHONPATH "$GITHUB_WORKSPACE/.venv/bin/python" examples/verify_install.py "${flags[@]}" --output exports
+      - name: Require the tag to match the installed version
+        if: github.ref_type == 'tag'
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          .venv/bin/python - <<'PY'
+          from importlib.metadata import version
+          import os
+
+          expected = f"v{version('geomapviz')}"
+          if os.environ["RELEASE_TAG"] != expected:
+              raise SystemExit(f"Release tag must be {expected}")
+          PY
+
+  publish:
+    needs: [build, verify]
+    if: >-
+      github.repository == 'ThomasBury/geomapviz' &&
+      github.event_name == 'push' &&
+      github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: pypi
+      url: https://pypi.org/p/geomapviz
+    permissions:
+      id-token: write
+    steps:
+      - name: Download validated distributions
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: distributions
+          path: dist
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2

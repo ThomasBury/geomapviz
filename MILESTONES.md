@@ -848,3 +848,72 @@ Phase 1 implementation and local checks are complete. Live GitHub matrix runs,
 artifact transfer and successful Codecov delivery for the correct commit still
 require a pushed run; none is claimed here. Stop after this phase. Phase 2
 metadata/publishing setup, the hosted preview and the 2.0 release remain pending.
+
+## Release plan, Phase 2 — implementation and publishing setup complete (2026-10-06)
+
+Replaced the deprecated license table with `license = "MIT"` and
+`license-files = ["LICENSE.md"]`. The existing MIT license text is unchanged.
+The setuptools backend now requires `>=77.0.3`; the dynamic version source and
+development version `2.0.0.dev0` are retained. Both archives declare metadata
+version 2.4, `License-Expression: MIT` and `License-File: LICENSE.md`; the wheel
+includes the license under its `.dist-info/licenses/` directory.
+
+Added `.github/workflows/publish.yml`. Branch pushes and pull requests build a
+source archive and a wheel from that source archive with uv 0.12.15, then run
+`twine check --strict`. A four-job Python 3.12 matrix installs each archive in
+base and interactive modes. Dependencies must have wheels; only the source
+Geomapviz archive is allowed to build. Each job checks dependency consistency
+and runs the existing installation example outside the checkout with `PYTHONPATH`
+removed. Interactive jobs also run all existing tests against the installed
+package; the full suite requires the interactive stack. No runtime or test
+implementation was changed.
+
+Publishing requires a `v*` tag push to `ThomasBury/geomapviz`, successful build
+and installation jobs, and an exact match between the tag and installed version
+(`v` followed by the package version, including any prerelease suffix).
+Only the publishing job can request a PyPI OIDC token. It downloads the already
+validated artifacts without checking out or rebuilding source, uses the `pypi`
+environment and supplies no long-lived credential. All actions use immutable
+commits; the publisher is v1.14.2 at
+`dc37677b2e1c63e2034f94d8a5b11f265b73ba33`, resolved from its annotated release
+tag through the GitHub API. Superseded branch/PR runs are cancelled; tag runs
+are allowed to finish to avoid interrupting an upload.
+
+Created the live GitHub `pypi` environment and read its settings back through the
+API. `ThomasBury` is the required reviewer, admin bypass is disabled, and the
+only deployment policy allows tags matching `v*`. Self-review is permitted
+because the repository has only one collaborator; every publish still waits
+for explicit approval. No deployment was approved or started in this phase.
+
+The maintainer confirmed PyPI publisher registration on 2026-10-06 at
+[Geomapviz publisher settings](https://pypi.org/manage/project/geomapviz/settings/publishing/)
+with owner `ThomasBury`, repository `geomapviz`, workflow filename `publish.yml`
+and environment `pypi`. This is maintainer-confirmed setup; the agent could not
+inspect the PyPI settings because no browser was connected.
+
+Verification artifacts and logs are under `/tmp/geomapviz-release-phase2`:
+
+- `uv build` and `twine check --strict` pass for both archives. A separate build
+  constrained to setuptools 77.0.3 also passes strict validation with Twine 7.0.0.
+- Archive inspection confirms the SPDX fields and unchanged license bytes in
+  both artifacts. The wheel's five Python modules match checkout source;
+  neither archive contains documentation exports or historical country assets.
+- Final interactive wheel and source installations each pass **70 tests**, with
+  the 12 existing mapclassify pure-Python fallback warnings. Both base installs
+  pass the numerical, geographic, static export and missing-extra example checks;
+  both interactive installs also pass the existing inline HTML export checks.
+- The actual publishing condition accepts upstream version-tag pushes and
+  rejects branch pushes, PRs, forks and other tags. The tag-check step accepts
+  `v2.0.0.dev0` and rejects `v2.0.0`, `v9.9.9` and `2.0.0.dev0` in all four installs.
+- Actionlint 1.7.12 validates both workflows. Ruff lint/format, ty against the
+  existing Python 3.12 verification environment, and `git diff --check` pass.
+
+Configuration references:
+[setuptools license migration](https://setuptools.pypa.io/en/latest/userguide/license_migration.html),
+[PyPI publisher registration](https://docs.pypi.org/trusted-publishers/adding-a-publisher/),
+and [PyPI OIDC publishing](https://docs.pypi.org/trusted-publishers/using-a-publisher/).
+
+Stop for review after this phase. Phase 2 changes are committed locally for
+review. No push, release tag or PyPI upload was made. Live workflow artifact
+transfer, PyPI OIDC authentication and publishing remain untested; the hosted
+documentation preview and release delivery remain separate work.
