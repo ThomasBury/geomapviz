@@ -1,66 +1,66 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=77.0.3"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]
 version = {attr = "geomapviz.__version__"}
 
 [tool.setuptools]
-package-data = {"*" = ["**/*.gz", "**/*.dbf", "**/*.cpg", "**/*.shp", "**/*.shx", "**/*.prj", "**/*.qpj", "**/*.sld" ,"**/*.tif"]}
+include-package-data = false
 
 [project]
 name = "geomapviz"
 dynamic = ["version"]
-requires-python = ">=3.8"
+requires-python = ">=3.12"
 description = "data visualization on maps with varying levels of granularity"
 authors = [{name = "Thomas Bury", email = "bury.thomas@gmail.com"}]
 readme = {file = "README.md", content-type = "text/markdown"}
 keywords = ["geographical", "visualization", "map", "interactive", "choropleth"]
-license = {file = "LICENSE.md"}
+license = "MIT"
+license-files = ["LICENSE.md"]
 classifiers = [
     "Programming Language :: Python :: 3"
 ]
 dependencies = [
-  "holoviews>=1.14.8",
-  "geoviews",
-  "matplotlib>=3.5",
-  "numpy>=1.21",
-  "pandas>=1.4",
-  "geopandas",
-  "mapclassify",
-  "contextily",
-  "panel>=0.13",
-  "scipy>=1.8.0",
-  "seaborn>=0.11.2",
-  "tqdm>=4.62.3",
-  "cartopy"
+  "matplotlib>=3.8.4",
+  "numpy>=1.26.4",
+  "pandas>=2.2.3",
+  "geopandas>=1.0.1",
+  "mapclassify>=2.6.1",
 ]
 
 
 [project.urls]
 homepage = "https://github.com/ThomasBury/geomapviz"
-documentation = "https://github.com/ThomasBury/geomapviz"
+documentation = "https://geomapviz.readthedocs.io/en/v2.0.0/"
 repository = "https://github.com/ThomasBury/geomapviz.git"
-changelog = "https://github.com/ThomasBury/geomapviz"
+changelog = "https://geomapviz.readthedocs.io/en/v2.0.0/release-notes/"
 Tracker = "https://github.com/ThomasBury/geomapviz/issues"
 
 [project.optional-dependencies]
-doc = [
-  "ipykernel",
-  "ipython_genutils",
-  "pandoc",
-  "sphinx",
-  "sphinxawesome-theme==4.1.0",
-  "nbsphinx==0.9.2",
-  "sphinx-autodoc-typehints<1.24.0",
-  "sphinx-copybutton==0.5.2",
-  "sphinx-tabs==3.4.1",
+interactive = [
+  "holoviews>=1.20.2",
+  "geoviews>=1.14.1",
+  "bokeh>=3.6.3",
+  "cartopy>=0.24.1",
 ]
 lint = [
-  "black",
-  "flake8"
+  "ruff",
+  "ty==0.0.84",
 ]
 test = [
   "pytest",
   "pytest-cov",
 ]
+
+[dependency-groups]
+docs = ["zensical==0.0.68"]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+
+[tool.ty.src]
+include = ["src"]

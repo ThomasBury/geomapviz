@@ -1,60 +1,77 @@
-<img src="pics/logo.png" alt="drawing" width="200"/>
+# Geomapviz
 
-[buy me caffeine](https://ko-fi.com/V7V72SOHX)
-
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![PyPI version](https://img.shields.io/pypi/v/geomapviz?style=flat)](https://pypi.org/project/geomapviz/)
-
-# 🗺️🐍 Geomapviz - Python Library for Beautiful and Interactive Geospatial Tabular Data Visualization 🚀
-
-Geomapviz is a Python library for visualizing geospatial tabular data. It aggregates tabular data at the geoid level, merges it with the shapefile, and provides a simple API to plot the average for single or multiple columns. The library is designed to create beautiful and interactive visualizations that help users better understand geospatial data. Geomapviz can produce a single map or a panel of maps, making it useful for comparing how different models capture geographical patterns. The package also supports returning average values either raw or automatically binned. Additionally, it allows users to customize the background color, including the option to switch from a black background to a light one. The styling is handled by a DataClass, PlotOptions, object is used to specify various arguments for creating a geospatial plot of a dataset
-
-[Geomapviz ReadTheDocs](https://geomapviz.readthedocs.io/en/latest/)
-
-<td align="left"><img src="pics/example_01.png" width="600"/></td>
-<td align="left"><img src="pics/example_02.png" width="300"/></td>
-
+**Geomapviz 2.0.0** — Python 3.12+ is required.
+Geomapviz prepares geographic means and exposure-weighted rate comparisons,
+joins them to your boundaries, and plots observed and predicted results with
+shared scales. Summaries remain inspectable pandas DataFrames.
 
 ## Installation
 
-`$ conda install -c conda-forge cartopy` then
-`$ pip install geomapviz -U`
+Use Python 3.12 by default (3.12+ is required):
 
- - If you face a `cartopy` installation error, try to install first from pre-built binaries `conda install -c conda-forge cartopy`. For installing on Linux platform, some dependencies are required, see [the cartopy documentation](https://scitools.org.uk/cartopy/docs/latest/installing.html) for details.
- - If you face a geoviews installation error, try `conda install -c pyviz geoviews`
+```sh
+python -m pip install geomapviz==2.0.0
+# For interactive maps and standalone HTML export:
+python -m pip install 'geomapviz[interactive]==2.0.0'
+```
+
+Or with uv:
+
+```sh
+uv venv --python 3.12
+uv pip install geomapviz==2.0.0
+# For interaction, use uv pip install 'geomapviz[interactive]==2.0.0' instead.
+```
+
+Compatible wheels include precompiled native libraries. No Conda environment is
+required on the verified Linux stack. See the [installation guide](docs/index.md#installation)
+for platform resolution limits and optional conda-forge fallback. For the 1.x
+API, install `geomapviz==1.1.3` and use its documentation.
+
+## Example
+
+Supply your own boundaries; this example invents two rectangles. Observed loss
+is an amount, while `model` is a predicted rate per unit of exposure.
+
+```python
+import geopandas as gpd
+import matplotlib.pyplot as plt
+import pandas as pd
+from shapely.geometry import box
+
+from geomapviz import aggregate_rates, prepare_geography
+from geomapviz.plot import plot_geography
+
+records = pd.DataFrame({
+    "area": ["001", "001"],
+    "loss": [10.0, 30.0],
+    "model": [8.0, 12.0],
+    "exposure": [1.0, 3.0],
+})
+boundaries = gpd.GeoDataFrame(
+    {"area": ["001", "002"]},
+    geometry=[box(4, 50, 4.08, 50.08), box(4.1, 50, 4.18, 50.08)],
+    crs="EPSG:4326",
+)
+summary = aggregate_rates(records, "area", "loss", ["model"], "exposure")
+mapped = prepare_geography(summary, boundaries, "area")
+figure = plot_geography(mapped, ["loss", "model"], geoid="area", include_support=True)
+figure.savefig("comparison.png")
+plt.close(figure)
+```
+
+Area `001` has observed rate 10 and predicted rate 11; area `002` remains missing.
+No boundaries, rasters or sample datasets are bundled.
 
 ## Documentation
 
-The [documentation notebook](nb/docs/geomap.ipynb) illustrates the functionality of `geomapviz`
-## Changelog
+- [2.0 guide](docs/index.md): installation and a complete synthetic comparison.
+- [API and 1.x migration](docs/api.md): signatures, rendering options and breaking changes.
+- [2.0.0 documentation](https://geomapviz.readthedocs.io/en/v2.0.0/).
+- [Release notes](docs/release-notes.md): breaking changes and validation limits.
+- [1.x documentation](https://geomapviz.readthedocs.io/en/1.1.3/).
+- [Milestone evidence](MILESTONES.md): numerical, rendering and installation checks.
 
-### 1.0
-
- - Complete refactoring of the library, including modular features and simpler code base
-
-### 0.6
-
- - Including files in source distributions
-
-### 0.5
-
- - [Bug] Capital letter in importing the BE shapefile
- - [Bug] Changed default values of arguments
-
-### 0.4
-
- - Make Belgian shp available using load_be_shp
- - More decimal
- - User defined alpha for the interactive maps
-
-### 0.3
-
- - Bound functions to the upper level
-
-### 0.2
-
- - First version
-
-### 0.1
-
- - First version
+Build locally with `uv pip install --group docs` and `.venv/bin/zensical build --clean`.
+The [prepared example](examples/prepared_comparison.py) exports static PNGs;
+add `--interactive` for standalone HTML.

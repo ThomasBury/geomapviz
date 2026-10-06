@@ -64,9 +64,6 @@ instance/
 # Scrapy stuff:
 .scrapy
 
-# Sphinx documentation
-docs/_build/
-
 # PyBuilder
 target/
 
@@ -98,11 +95,14 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
-# mkdocs documentation
+# Zensical documentation
 /site
 
 # mypy
 .mypy_cache/
+
+# Ruff
+.ruff_cache/
 
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio and WebStorm
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839

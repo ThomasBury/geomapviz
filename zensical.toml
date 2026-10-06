@@ -1,0 +1,22 @@
+[project]
+site_name = "Geomapviz — 2.0.0 documentation"
+site_url = "https://geomapviz.readthedocs.io/"
+site_description = "Prepare, compare and map geographic means and exposure-weighted rates."
+strict = true
+nav = [
+  { "Quickstart" = "index.md" },
+  { "Aggregation" = "aggregation.md" },
+  { "Geography" = "geography.md" },
+  { "Plotting and export" = "plotting.md" },
+  { "API and migration" = "api.md" },
+  { "Release notes" = "release-notes.md" },
+]
+
+[project.validation]
+invalid_links = true
+invalid_link_anchors = true
+
+[project.markdown_extensions]
+tables = {}
+"pymdownx.highlight" = {}
+"pymdownx.superfences" = {}
