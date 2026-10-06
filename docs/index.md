@@ -62,7 +62,13 @@ This is the same data and workflow as
 [the prepared-comparison example](https://github.com/ThomasBury/geomapviz/blob/feat/v2.0.0/examples/prepared_comparison.py).
 The four rectangles are invented boundaries, not an administrative map.
 `loss` contains observed amounts; both model columns contain predicted amounts
-per unit of exposure. The zero-exposure row has no contribution.
+per unit of exposure. Exposure measures the time or quantity at risk, such as
+insured years. With loss in euros and exposure in insured years, the resulting
+rates are euros per insured year. The zero-exposure row has no contribution.
+
+`area` is the geographic ID that joins records to boundaries; keep its leading
+zeros. `EPSG:4326` identifies the boundary coordinate reference system (CRS):
+the rectangles use longitude and latitude in degrees.
 
 ```python
 import geopandas as gpd
@@ -100,13 +106,28 @@ print(summary)
 print(mapped.attrs["coverage"])
 ```
 
+Save the code as `quickstart.py` in the checkout directory and run:
+
+```sh
+.venv/bin/python -i quickstart.py
+```
+
+Open `comparison.png` from that directory in an image viewer. The `-i` option
+keeps the Python session open; paste continuation examples from the following
+pages into that same session to reuse `records`, `boundaries`, `summary` and `mapped`.
+
 Area `001` has observed rate `40 / 4 = 10` and model A rate
 `(8 × 1 + 12 × 3) / 4 = 11`. Its signed difference is `-1` and ratio is
-`40 / 44`. Area `003` has a real zero observed rate and an undefined model A
-ratio because the expected total is zero. Area `004` has no observations and
-retains missing values. [Aggregation](aggregation.md) explains these distinctions.
+`40 / 44`. A negative observed-minus-predicted difference or an observed/expected
+ratio below one indicates overprediction. Area `003` has a real zero observed
+rate and an undefined model A ratio because the expected total is zero. Area
+`004` has no observations and retains missing values.
+[Aggregation](aggregation.md) explains these distinctions.
 
-![Seven synthetic maps show observed and two predicted rates, their signed difference and ratio, record counts and exposure. Area 004 is hatched as missing; area 003 has zero loss and an undefined model A ratio.](assets/comparison.png)
+[![Seven synthetic maps show observed and two predicted rates, their signed difference and ratio, record counts and exposure. Area 004 is hatched as missing; area 003 has zero loss and an undefined model A ratio.](assets/comparison.png)](assets/comparison.png)
+
+Select the image to open the full-resolution PNG. In each panel, areas run
+`001`–`004` from left to right.
 
 [Open or download the standalone interactive comparison](assets/comparison.html).
 Hover reveals IDs, raw values and support; pan and zoom use the map toolbar.

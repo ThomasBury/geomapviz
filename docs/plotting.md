@@ -10,8 +10,9 @@ share a scale across panels. Metadata gives totals, ratios, differences, counts
 and weights separate scales. Differences use a symmetric scale centered on
 zero and the `RdBu_r` diverging palette. Other quantities use `options.cmap`.
 
-A constant panel receives a padded range. Missing values do not influence
-scale limits; an entirely missing panel has no numerical colorbar.
+When all finite values in a quantity group are equal, its shared range is padded.
+A constant panel otherwise shares the range of its varying peers. Missing values
+do not influence scale limits; an entirely missing panel has no numerical colorbar.
 
 ## Classification
 

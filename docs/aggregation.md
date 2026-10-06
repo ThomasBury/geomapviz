@@ -74,15 +74,25 @@ For example, if missing predictions justify excluding records, apply the same
 finite-row rule to all selected metrics and exposure, and inspect the exclusions:
 
 ```python
+# Continue from the Quickstart's records without changing them or its summary.
 import numpy as np
 
+incomplete_records = records.copy()
+incomplete_records.loc[1, "model_a"] = np.nan
 columns = ["loss", "model_a", "model_b", "exposure"]
-finite = np.isfinite(records[columns].to_numpy(dtype=float)).all(axis=1)
-cohort = records.loc[finite].copy()
+finite = np.isfinite(incomplete_records[columns].to_numpy(dtype=float)).all(axis=1)
+cohort = incomplete_records.loc[finite].copy()
+excluded_records = incomplete_records.loc[~finite]
 excluded_count = int((~finite).sum())
-summary = aggregate_rates(cohort, "area", "loss", ["model_a", "model_b"], "exposure")
+print(excluded_records)
+assert excluded_count == 1
+cohort_summary = aggregate_rates(
+    cohort, "area", "loss", ["model_a", "model_b"], "exposure"
+)
 ```
 
+The excluded row has index `1`, area `001`, and a missing model A prediction.
+It is excluded from both model comparisons, so they use the same records.
 This selects finite records; deciding whether their exclusion is appropriate
 remains the caller's responsibility. It does not fix negative exposure or missing IDs.
 

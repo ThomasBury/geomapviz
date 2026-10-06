@@ -5,22 +5,11 @@ No country files, raster backgrounds or sample datasets are bundled.
 
 ## Boundaries and identifiers
 
-Load a boundary file with `geopandas.read_file`, choose its geographic ID column,
-and pass only needed boundary attributes to `prepare_geography`.
+Continue in the same Python session as the [Quickstart](index.md#a-complete-synthetic-comparison),
+using its synthetic records, summary and four boundaries.
 The boundary frame must have one non-missing, unique ID per area, an active
 geometry column, a declared coordinate reference system (CRS), and valid,
 non-empty geometries. Plotting requires polygons or multipolygons.
-
-```python
-import geopandas as gpd
-from geomapviz import prepare_geography
-
-# With your own file and an existing aggregate summary:
-boundaries = gpd.read_file("boundaries.gpkg")
-mapped = prepare_geography(
-    summary, boundaries[["area", boundaries.geometry.name]], "area"
-)
-```
 
 Duplicate boundary IDs require an explicit GeoPandas `dissolve` first.
 Summary IDs must also be unique. Overlapping column names other than the ID
@@ -96,3 +85,19 @@ assert north["model_a"] == 9
 The north observed rate is `48 / 6 = 8`, whereas averaging the child rates
 `10` and `4` would incorrectly give `7`. The `empty` parent boundary remains
 missing. See [Aggregation](aggregation.md) for denominator and support rules.
+
+## Load your own boundaries
+
+Load a boundary file with `geopandas.read_file`, choose its geographic ID column,
+and pass only needed boundary attributes to `prepare_geography`.
+With an existing aggregate `summary` whose area IDs occur in the file:
+
+```python
+import geopandas as gpd
+from geomapviz import prepare_geography
+
+file_boundaries = gpd.read_file("boundaries.gpkg")
+file_mapped = prepare_geography(
+    summary, file_boundaries[["area", file_boundaries.geometry.name]], "area"
+)
+```
