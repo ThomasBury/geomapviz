@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=77.0.3"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]
@@ -16,7 +16,8 @@ description = "data visualization on maps with varying levels of granularity"
 authors = [{name = "Thomas Bury", email = "bury.thomas@gmail.com"}]
 readme = {file = "README.md", content-type = "text/markdown"}
 keywords = ["geographical", "visualization", "map", "interactive", "choropleth"]
-license = {file = "LICENSE.md"}
+license = "MIT"
+license-files = ["LICENSE.md"]
 classifiers = [
     "Programming Language :: Python :: 3"
 ]
