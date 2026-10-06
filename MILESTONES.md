@@ -919,7 +919,7 @@ transfer, PyPI OIDC authentication and publishing remain untested; the hosted
 documentation preview and release delivery remain separate work.
 
 
-## Review PR and 2.0.0 preparation — in progress (2026-10-06)
+## Review PR and 2.0.0 release — completed (2026-10-06)
 
 ### Live verification of the development head
 
@@ -1021,3 +1021,84 @@ hover/zoom/offline checks and the Read the Docs default change remain pending.
 No Read the Docs API token or browser is available. Its default was read back
 as `latest`; `stable` is still 1.1.3. CodeRabbit skipped the initial draft, so a
 successful CodeRabbit status on that draft does not constitute a review.
+
+
+### Completed 2.0.0 release
+
+The candidate records above describe earlier release gates. All release gates
+are now complete for merged commit
+`5235bb39416a8d11c4f5785caa0ad0f26ccba951`, with the annotated remote tag
+`v2.0.0` peeling to that exact commit. Final evidence comes from
+`/tmp/geomapviz-release-merged/release-report.md` and its accompanying artifacts.
+
+- Merged-commit CI passes:
+  [RuffCov 37472316704](https://github.com/ThomasBury/geomapviz/actions/runs/37472316704)
+  and [Distributions 37472316705](https://github.com/ThomasBury/geomapviz/actions/runs/37472316705).
+  Tag CI also passes:
+  [RuffCov 37475168496](https://github.com/ThomasBury/geomapviz/actions/runs/37475168496)
+  and [Distributions 37475168311](https://github.com/ThomasBury/geomapviz/actions/runs/37475168311),
+  including all build/install jobs and the explicitly approved protected PyPI job.
+- [PyPI 2.0.0](https://pypi.org/project/geomapviz/2.0.0/) is published.
+  Wheel and source hashes match the validated workflow artifacts. Fresh PyPI
+  base and interactive environments both pass `uv pip check` and the copied
+  `examples/verify_install.py` outside the checkout, with `PYTHONPATH` removed
+  and package paths inside their respective environments. Existing mapclassify
+  pure-Python fallback warnings do not fail those checks.
+- Read the Docs default was changed from `latest` to `stable`, then temporarily
+  pinned to the successfully built explicit 1.1.3 version
+  ([build 34970110](https://app.readthedocs.org/projects/geomapviz/builds/34970110/))
+  before tagging. Tag activation was automatic;
+  [v2.0.0 build 34970247](https://app.readthedocs.org/projects/geomapviz/builds/34970247/)
+  and [stable build 34970246](https://app.readthedocs.org/projects/geomapviz/builds/34970246/)
+  succeed for the release commit. All six versioned pages and both downloads
+  return HTTP 200; guide navigation and image alt text are present, and the
+  hosted PNG matches the release source.
+- Hosted map hover and box zoom pass in connected Chrome. Downloaded HTML
+  hover, zoom and reset pass in local Playwright with the context offline and
+  every HTTP(S) request blocked. The versioned downloaded HTML passes the same
+  checks without page errors.
+- The final documentation default was restored to `stable` only after package
+  and versioned documentation verification. The root redirects to
+  [the stable 2.0.0 guide](https://geomapviz.readthedocs.io/en/stable/).
+- Published the [GitHub Release for v2.0.0](https://github.com/ThomasBury/geomapviz/releases/tag/v2.0.0)
+  using the existing release notes and a versioned
+  [migration guide](https://geomapviz.readthedocs.io/en/v2.0.0/api/#migrating-from-1x).
+  Read-back confirms a published release, not a draft or prerelease.
+- Returned the local checkout to `main` and fast-forwarded it to the released
+  commit. The milestone completion record is a subsequent documentation edit;
+  the published tag and package are unchanged.
+
+
+### Representative real-data trial
+
+Tried [GeoDa's Chicago community-area data](https://geodacenter.github.io/data-and-lab/airbnb/)
+with the published 2.0.0 base and interactive installations outside the checkout.
+All 77 areas (76 Polygons and one MultiPolygon, EPSG:4326) have valid geometries,
+unique IDs, finite selected counts and positive population. No source repairs
+or exclusions were needed. Crime/theft counts cover October 2014–September
+2015; population is from Census 2010, so the per-1,000 rates are historical
+illustrations, not current risk or model calibration.
+
+`aggregate_means` with population weights, numeric-to-string ID matching and
+`prepare_geography` pass for all areas. `assign_parent` and native GeoPandas
+dissolve produce a city summary matching independently summed counts divided
+by summed population. Deliberately omitting one observation retains the missing
+boundary and reports its ID correctly. Both installations export continuous,
+classified and missing-area PNGs; the interactive installation also exports
+both HTML maps. Offline Chromium hover, box zoom and reset pass for both HTML
+maps with no page errors and every HTTP(S) request blocked. Four optional
+upstream Panel CSS requests are blocked per export without preventing map use.
+Static and interactive screenshots were visually inspected. Existing
+mapclassify fallback warnings remain non-failing.
+
+No new feature is justified: observed-only weighted rates already use
+`aggregate_means`, and native GeoPandas supplies loading and dissolve. This
+trial identifies no further compatibility check for its Linux/Python 3.12
+workflow. Test macOS/Windows runtime behavior when a real user targets those
+platforms; existing wheel checks do not establish runtime support. This small
+area-level dataset does not validate policy-level predictions, large-data
+performance or statistical calibration.
+
+The runnable check, archive checksum, numerical evidence, PNG/HTML exports and
+offline browser results are recorded in
+`/tmp/geomapviz-real-data/trial-report.md`. No runtime source was changed.
