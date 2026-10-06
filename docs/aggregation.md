@@ -1,6 +1,6 @@
 # Aggregation
 
-**2.0 development documentation.** All aggregation functions return pandas
+**Geomapviz 2.0.0 documentation.** All aggregation functions return pandas
 DataFrames and leave the original records unchanged. They do not import the
 rendering stack or compute statistical intervals.
 

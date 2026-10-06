@@ -1,6 +1,6 @@
 # Plotting and export
 
-**2.0 development documentation.** `plot_geography` renders an already prepared
+**Geomapviz 2.0.0 documentation.** `plot_geography` renders an already prepared
 GeoDataFrame. It does not aggregate records or change caller data.
 
 ## Shared scales
@@ -81,7 +81,7 @@ plt.close(figure)
 
 ## Standalone HTML export
 
-Install `.[interactive]` from the development checkout. Interactive plotting
+Install `geomapviz[interactive]==2.0.0` from PyPI. Interactive plotting
 returns a HoloViews layout of GeoViews polygons. Inline resources make the
 export usable offline with no Python server or map-tile downloads:
 

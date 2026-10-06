@@ -1,6 +1,6 @@
 # Geography
 
-**2.0 development documentation.** Geomapviz uses caller-supplied boundaries.
+**Geomapviz 2.0.0 documentation.** Geomapviz uses caller-supplied boundaries.
 No country files, raster backgrounds or sample datasets are bundled.
 
 ## Boundaries and identifiers

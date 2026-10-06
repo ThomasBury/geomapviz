@@ -1,7 +1,7 @@
 # API and migration
 
-**2.0 development documentation.** Python 3.12+ is required. The checkout
-remains `2.0.0.dev0` until release delivery. This reference is hand-authored;
+**Geomapviz 2.0.0 documentation.** Python 3.12+ is required.
+This reference is hand-authored;
 the [Quickstart](index.md) provides a runnable comparison.
 
 ## Preparation functions
@@ -96,8 +96,8 @@ for differences and class-count limits.
 ## Migrating from 1.x
 
 2.0 is a breaking release with no compatibility shims. Released Git tags retain
-the original sources; [published 1.x documentation](https://geomapviz.readthedocs.io/en/latest/)
-remains separate from this development guide.
+the original sources; [published 1.x documentation](https://geomapviz.readthedocs.io/en/1.1.3/)
+remains separate from this guide. See the [2.0.0 release notes](release-notes.md).
 
 | Removed 1.x behavior | 2.0 replacement |
 | --- | --- |

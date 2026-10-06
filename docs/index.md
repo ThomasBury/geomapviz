@@ -1,7 +1,7 @@
 # Quickstart
 
-**2.0 development documentation** — this checkout is `2.0.0.dev0`.
-The published 1.x package has a different API; see [API and migration](api.md#migrating-from-1x).
+**Geomapviz 2.0.0 documentation.**
+The 1.x package has a different API; see [API and migration](api.md#migrating-from-1x).
 
 Geomapviz prepares geographic means and exposure-weighted rate comparisons,
 joins them to your boundaries, and renders maps with shared scales. Use it when
@@ -11,13 +11,11 @@ The summaries remain ordinary pandas DataFrames that you can inspect before plot
 ## Installation
 
 Use Python 3.12 by default; the package requires Python 3.12 or newer.
-Run these commands from a checkout of the `feat/v2.0.0` branch:
+Create an environment and install the release from PyPI:
 
 ```sh
-git clone --branch feat/v2.0.0 https://github.com/ThomasBury/geomapviz.git
-cd geomapviz
 python3.12 -m venv .venv
-.venv/bin/python -m pip install .
+.venv/bin/python -m pip install geomapviz==2.0.0
 ```
 
 On Windows, create the environment with `py -3.12 -m venv .venv` and use
@@ -26,20 +24,20 @@ The base installation supports aggregation, geography preparation and static map
 For interactive maps and standalone HTML export, install the extra in the same environment:
 
 ```sh
-.venv/bin/python -m pip install '.[interactive]'
+.venv/bin/python -m pip install 'geomapviz[interactive]==2.0.0'
 ```
 
 With [uv](https://docs.astral.sh/uv/getting-started/installation/), the equivalent is:
 
 ```sh
 uv venv --python 3.12
-uv pip install .
+uv pip install geomapviz==2.0.0
 # Choose this instead for HTML export:
-uv pip install '.[interactive]'
+uv pip install 'geomapviz[interactive]==2.0.0'
 ```
 
-These install the development checkout. `pip install geomapviz` installs the
-published release, which may still be 1.x.
+For the previous API, install `geomapviz==1.1.3` and use the
+[1.x documentation](https://geomapviz.readthedocs.io/en/1.1.3/).
 
 Compatible wheels contain precompiled native libraries, so a normal pip or uv
 installation does not require you to compile those libraries.
@@ -59,7 +57,7 @@ no Pixi environment or additional lockfile.
 ## A complete synthetic comparison
 
 This is the same data and workflow as
-[the prepared-comparison example](https://github.com/ThomasBury/geomapviz/blob/feat/v2.0.0/examples/prepared_comparison.py).
+[the prepared-comparison example](https://github.com/ThomasBury/geomapviz/blob/v2.0.0/examples/prepared_comparison.py).
 The four rectangles are invented boundaries, not an administrative map.
 `loss` contains observed amounts; both model columns contain predicted amounts
 per unit of exposure. Exposure measures the time or quantity at risk, such as
@@ -106,7 +104,7 @@ print(summary)
 print(mapped.attrs["coverage"])
 ```
 
-Save the code as `quickstart.py` in the checkout directory and run:
+Save the code as `quickstart.py` in your working directory and run:
 
 ```sh
 .venv/bin/python -i quickstart.py
@@ -142,7 +140,8 @@ The HTML contains its JavaScript resources and needs no Python server.
 
 ## Build this guide
 
-Contributors can build or preview without installing Geomapviz or its geospatial dependencies:
+From a repository checkout, contributors can build or preview without installing
+Geomapviz or its geospatial dependencies:
 
 ```sh
 uv venv --python 3.12

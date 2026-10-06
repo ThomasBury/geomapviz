@@ -1,5 +1,5 @@
 [project]
-site_name = "Geomapviz — 2.0 development documentation"
+site_name = "Geomapviz — 2.0.0 documentation"
 site_url = "https://geomapviz.readthedocs.io/"
 site_description = "Prepare, compare and map geographic means and exposure-weighted rates."
 strict = true
@@ -9,6 +9,7 @@ nav = [
   { "Geography" = "geography.md" },
   { "Plotting and export" = "plotting.md" },
   { "API and migration" = "api.md" },
+  { "Release notes" = "release-notes.md" },
 ]
 
 [project.validation]

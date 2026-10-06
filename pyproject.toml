@@ -32,9 +32,9 @@ dependencies = [
 
 [project.urls]
 homepage = "https://github.com/ThomasBury/geomapviz"
-documentation = "https://github.com/ThomasBury/geomapviz"
+documentation = "https://geomapviz.readthedocs.io/en/v2.0.0/"
 repository = "https://github.com/ThomasBury/geomapviz.git"
-changelog = "https://github.com/ThomasBury/geomapviz"
+changelog = "https://geomapviz.readthedocs.io/en/v2.0.0/release-notes/"
 Tracker = "https://github.com/ThomasBury/geomapviz/issues"
 
 [project.optional-dependencies]
