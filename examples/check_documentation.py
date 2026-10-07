@@ -51,7 +51,11 @@ def main():
         section = section.split(f"# --8<-- [end:{name}]", 1)[0].strip()
         assert section in text, f"Canonical source snippet missing: {name}"
         assert "--8<--" not in text
-        assert len(page.frames) == 1
+        assert len(page.frames) == (2 if name == "belgium" else 1)
+        if name == "belgium":
+            background = source.split("# --8<-- [start:background]\n", 1)[1]
+            background = background.split("# --8<-- [end:background]", 1)[0].strip()
+            assert background in text, "Background-map source snippet missing"
     for filename in [
         site / "index.html",
         *site.glob("*/index.html"),

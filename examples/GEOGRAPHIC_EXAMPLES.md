@@ -18,14 +18,19 @@ uv run --no-project --python 3.12 --with 'geomapviz[interactive]==2.0.1' \
 `--no-project` prevents uv from installing a surrounding checkout's project
 dependencies. See [uv's script guide](https://docs.astral.sh/uv/guides/scripts/).
 Dependency installation needs internet access initially; the examples themselves
-make no requests, use no map tiles, and need no Python server. Open the exported
-standalone HTML directly in a browser.
+read local data and need no Python server. The Belgian background-map HTML
+loads OpenStreetMap tiles over the internet when viewed; all other HTML
+maps work offline. Open plain standalone HTML directly in a browser. For `belgium_background.html`,
+run `python -m http.server --directory output 8000` and open
+`http://localhost:8000/belgium_background.html` so online tile requests have a
+browser referrer, as required by the
+[OpenStreetMap tile policy](https://operations.osmfoundation.org/policies/tiles/).
 
 The runner defaults to `--case all` and all static exports. Cases:
 
 | Case | Results and what to look for |
 | --- | --- |
-| `belgium` | Municipality mean, four comparable simulated signals/predictors, continuous and classified maps. Compare local noise with east/north biases; equal and exposure-weighted summaries are exported separately. |
+| `belgium` | Municipality mean, four comparable simulated signals/predictors, continuous and classified maps. Compare local noise with east/north biases; equal and exposure-weighted summaries are exported separately. With `--interactive`, also export a transparent choropleth over online street-map tiles. |
 | `aggregation` | Municipality, arrondissement and region maps on one continuous scale. Regional aggregation smooths variation. Original records are reaggregated; geometries are dissolved separately using authoritative mappings. |
 | `rates` | Simulated observed counts per exposure and two simulated rate predictions, shared scales, signed differences, ratios, counts, exposure and a Matplotlib scatterplot. Models have different east/north spatial errors. |
 | `netherlands` | Four countrywide continuous postcode maps of projected-coordinate simulated patterns and one classified signal map. Add `--interactive` to inspect small areas. |

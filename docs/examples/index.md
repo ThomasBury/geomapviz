@@ -6,7 +6,7 @@ All run through one ordinary Python script with local, committed data.
 
 | Walkthrough | What to look for |
 | --- | --- |
-| [Belgium: geographic means](belgium.md) | Equal and weighted means; four comparable signals; continuous colors and classes |
+| [Belgium: geographic means](belgium.md) | Equal and weighted means; four comparable signals; continuous colors and classes; optional online basemap |
 | [Belgium: changing geographic scale](aggregation.md) | Municipality, arrondissement and region patterns; original-record aggregation and separate dissolve |
 | [Belgium: observed and predicted rates](rates.md) | Directional errors; shared rates, differences, ratios, support and scatterplots |
 | [Netherlands: postcode geography](netherlands.md) | Countrywide continuous and classified patterns; small-area interaction |
@@ -41,14 +41,18 @@ uv run --no-project --python 3.12 --with 'geomapviz[interactive]==2.0.0' \
 [uv supplies Python and dependencies](https://docs.astral.sh/uv/guides/scripts/).
 `--no-project` avoids installing the surrounding checkout. Dependency installation
 needs internet access initially; running examples reads only local files and
-uses no data downloads, tiles or Python server. The default is all static cases;
+uses no data downloads or Python server. The Belgian background-map HTML loads
+online tiles when viewed; the other maps need no tile service. The default is all
+static cases;
 `--case` selects `belgium`, `aggregation`, `rates`, `netherlands` or `demographics`.
 `--output` selects a directory; data paths always resolve beside the script.
 
-Open PNGs in an image viewer and standalone HTML directly in a browser. HTML
+Open PNGs in an image viewer and plain standalone HTML directly in a browser.
+For the background map, follow the [local serving instructions](belgium.md#adding-a-background-map). HTML
 contains full geometry and inline plot resources, so files are large (5–93 MB)
 and rendering can take time. Published embeds are optional and keep static
-previews available. Hover, pan, zoom and reset work with external requests
+previews available. For plain maps, hover, pan, zoom and reset work with external
+requests
 blocked; optional upstream stylesheet requests are not needed for those tools.
 
 The installed package is currently 2.0.0. The bundle includes commands for the

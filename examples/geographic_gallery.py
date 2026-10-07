@@ -3,7 +3,8 @@
 Run every static example (data paths are relative to this script):
     uv run --no-project --python 3.12 --with 'geomapviz==2.0.1' \
         geographic_gallery.py --output output
-Add --interactive with geomapviz[interactive] for standalone, offline HTML.
+Add --interactive with geomapviz[interactive] for standalone HTML.
+The Belgian background map loads online tiles when opened in a browser.
 """
 
 import argparse
@@ -95,6 +96,25 @@ def geographic_ranges(plot, _element):
     plot.state.y_range = DataRange1d()
 
 
+# plot_geography already projects to Web Mercator. Native HoloViews
+# polygons retain data/options and avoid repeating Cartopy projection.
+def native_polygon(panel):
+    import holoviews as hv
+
+    rendering = {
+        **panel.opts.get("plot").kwargs,
+        **panel.opts.get("style").kwargs,
+    }
+    rendering.pop("width")
+    rendering.pop("height")
+    rendering["hooks"] = [*rendering["hooks"], geographic_ranges]
+    return (
+        panel.clone(new_type=hv.Polygons)
+        .opts.clear()
+        .opts(**rendering, data_aspect=1, responsive="width", aspect=1)
+    )
+
+
 def export(
     mapped,
     metrics,
@@ -128,22 +148,6 @@ def export(
         if limits is not None:
             layout = layout.map(lambda panel: panel.opts(clim=limits), gv.Polygons)
 
-        # plot_geography already projects to Web Mercator. Native HoloViews
-        # polygons retain data/options and avoid repeating Cartopy projection.
-        def native_polygon(panel):
-            rendering = {
-                **panel.opts.get("plot").kwargs,
-                **panel.opts.get("style").kwargs,
-            }
-            rendering.pop("width")
-            rendering.pop("height")
-            rendering["hooks"] = [*rendering["hooks"], geographic_ranges]
-            return (
-                panel.clone(new_type=hv.Polygons)
-                .opts.clear()
-                .opts(**rendering, data_aspect=1, responsive="width", aspect=1)
-            )
-
         layout = layout.map(native_polygon, gv.Polygons).opts(
             sizing_mode="stretch_width"
         )
@@ -153,6 +157,31 @@ def export(
 
 
 # --8<-- [end:export]
+
+
+# --8<-- [start:background]
+def background_map(mapped, output):
+    import holoviews as hv
+
+    layout = plot_geography(
+        mapped,
+        ["simulated_signal"],
+        geoid="mun_id",
+        options=PlotOptions(interactive=True, alpha=0.55, figsize=(10, 8)),
+    )
+    # Both the returned polygons and map tiles use EPSG:3857 (Web Mercator).
+    polygons = native_polygon(layout.values()[0])
+    basemap = hv.Tiles("https://tile.openstreetmap.org/{Z}/{X}/{Y}.png", name="OSM")
+    chart = (basemap * polygons).opts(title="Simulated Belgian mean over a street map")
+    hv.save(
+        chart,
+        output / "belgium_background.html",
+        backend="bokeh",
+        resources="inline",
+    )
+
+
+# --8<-- [end:background]
 
 
 # --8<-- [start:belgium]
@@ -165,6 +194,8 @@ def belgium(output, interactive):
     mapped = prepare_geography(weighted, boundaries, "mun_id")
     save_summary(mapped, "mun_id", output, "belgium_weighted")
     equal.to_csv(output / "belgium_equal.csv", index=False)
+    if interactive:
+        background_map(mapped, output)
     export(mapped, ["simulated_signal"], "mun_id", output, "belgium_mean", interactive)
     export(mapped, METRICS, "mun_id", output, "belgium_predictors", interactive)
     export(
@@ -343,7 +374,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--case", choices=[*CASES, "all"], default="all")
     parser.add_argument(
-        "--interactive", action="store_true", help="also export standalone offline HTML"
+        "--interactive",
+        action="store_true",
+        help="also export HTML (Belgian basemap needs online tiles)",
     )
     parser.add_argument("--output", type=Path, default=Path("output"))
     args = parser.parse_args()

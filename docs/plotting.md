@@ -3,7 +3,9 @@
 `plot_geography` renders an already prepared GeoDataFrame without reaggregation
 or mutation. See [Belgian means](examples/belgium.md) for continuous/classified
 panels, [rate comparisons](examples/rates.md) for scales by quantity, and
-[Dutch postcodes](examples/netherlands.md) for small-area interaction.
+[Dutch postcodes](examples/netherlands.md) for small-area interaction, and
+[adding a background map](examples/belgium.md#adding-a-background-map) for a
+transparent choropleth over online street-map tiles.
 
 ## Shared scales
 
@@ -70,7 +72,8 @@ native Matplotlib for its small comparison scatterplot.
 
 Install `geomapviz[interactive]==2.0.0`. Interaction returns a HoloViews layout
 of GeoViews polygons. `holoviews.save(..., backend="bokeh", resources="inline")`
-exports plot resources for use without a Python server or tile service.
+exports plot resources for use without a Python server. Plain maps need no tile
+service; the optional Belgian background-map example loads online tiles.
 The canonical helper retains already projected polygon data/options as native
 HoloViews polygons to avoid repeated projection:
 
@@ -89,5 +92,7 @@ The gallery helper removes fixed dimensions and uses native HoloViews sizing
 with equal coordinate units. Native Bokeh auto ranges enforce the coordinate
 scale as the frame resizes, including space taken by colorbars. Choose `ncols=1` when a narrow screen needs larger
 individual panels. A missing extra gives an explicit installation error. Rendering preserves application Matplotlib
-settings and an existing Bokeh theme. Tiles, raster backgrounds, normalization
+settings and an existing Bokeh theme. Tile overlays can be added using native
+HoloViews composition, as in the Belgian example. Built-in tiles, raster
+backgrounds, normalization
 and statistical intervals are outside the v2 API; see [PlotOptions](api.md#plotoptions).

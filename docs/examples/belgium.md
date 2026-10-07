@@ -39,6 +39,50 @@ Classification emphasizes areas crossing an edge and hides small differences
 inside each interval. Read the interval labels rather than interpreting colors
 as a continuous measurement.
 
+## Adding a background map
+
+Overlay the same choropleth on a street map to locate cities, roads and rivers,
+as in the [1.1.3 background-map example](https://geomapviz.readthedocs.io/en/1.1.3/nb/geomap.html#Adding-background-map).
+The runner uses native [HoloViews tile overlays](https://holoviews.org/reference/elements/bokeh/Tiles.html)
+with OpenStreetMap tiles. An opacity of `0.55` lets the
+map show through the municipality colors; hover still reports the simulated
+mean and support. Basemap attribution appears inside the interactive map.
+
+[![Semi-transparent Belgian municipality choropleth over a street map, with cities, roads and rivers visible.](../assets/geographic/belgium_background.png)](../assets/geographic/belgium_background.png)
+
+[Open the map with its background](../assets/geographic/belgium_background.html) ·
+<a href="../assets/geographic/belgium_background.html" download>Download standalone HTML</a>.
+Pan and zoom to inspect individual municipalities. The HTML needs **internet
+access to load map tiles**; polygons, hover and plot resources are embedded.
+The PNG preview can be viewed offline. These historical municipality boundaries
+and simulated values are unchanged; the basemap comes from the live tile service.
+Colors blend with the background, so use the plain choropleth above for precise
+color comparisons.
+
+```python
+--8<-- "examples/geographic_gallery.py:background"
+```
+
+`plot_geography` projects interactive polygons to EPSG:3857 (Web Mercator), the
+same coordinate system as the tiles. The shared `native_polygon` helper keeps
+that data and styling when converting to native HoloViews polygons. Multiplication
+places the polygons over the basemap; no `PlotOptions.background` field is needed.
+Running the Belgian case with `--interactive` also writes `belgium_background.html`.
+For this map, serve the output directory so tile requests include the browser's
+referrer, as required by the [OpenStreetMap tile policy](https://operations.osmfoundation.org/policies/tiles/):
+
+```sh
+python -m http.server --directory output 8000
+```
+
+Then open `http://localhost:8000/belgium_background.html`. The plain HTML maps
+can still be opened directly from disk.
+
+<details ontoggle="if (this.open) { const frame = this.querySelector('iframe'); if (!frame.hasAttribute('src')) frame.src = frame.dataset.src; }">
+<summary>Open the interactive map with online background tiles</summary>
+<iframe data-src="../assets/geographic/belgium_background.html" title="Interactive simulated Belgian municipality choropleth over a street map" width="100%" height="800" loading="lazy"></iframe>
+</details>
+
 ## Canonical code
 
 This is the actual case function from `geographic_gallery.py`, included at build
@@ -102,7 +146,9 @@ uv run --no-project --python 3.12 --with 'geomapviz[interactive]==2.0.0' \
 
 The first command exports PNGs, inspectable CSVs and metadata JSON; the second
 also exports standalone HTML. Data paths are relative to the script, so running
-needs no data downloads, map tiles or Python server. Full geometry makes HTML
+needs no data downloads or Python server. The background-map HTML fetches online
+tiles when viewed; the other HTML exports work without tiles. Full geometry
+makes HTML
 exports large and slower to generate. These commands use the currently published
 2.0.0 package; the bundle also documents the upcoming 2.0.1 documentation patch,
 which uses the same APIs.
