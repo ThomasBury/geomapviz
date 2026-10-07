@@ -101,10 +101,10 @@ from its directory. [uv](https://docs.astral.sh/uv/guides/scripts/) supplies Pyt
 and dependencies; `--no-project` avoids installing checkout dependencies.
 
 ```sh
-uv run --no-project --python 3.12 --with 'geomapviz==2.0.1' \
+uv run --no-project --python 3.12 --with 'geomapviz==2.0.2' \
   geographic_gallery.py --case rates --output output
 
-uv run --no-project --python 3.12 --with 'geomapviz[interactive]==2.0.1' \
+uv run --no-project --python 3.12 --with 'geomapviz[interactive]==2.0.2' \
   geographic_gallery.py --case rates --interactive --output output
 ```
 

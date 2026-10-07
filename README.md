@@ -10,7 +10,7 @@ real Belgian municipality boundaries and simulated values.
 From a checkout, run the working Belgian demonstration:
 
 ```sh
-uv run --no-project --python 3.12 --with 'geomapviz==2.0.1' \
+uv run --no-project --python 3.12 --with 'geomapviz==2.0.2' \
   examples/geographic_gallery.py --case belgium --output output
 ```
 
@@ -25,9 +25,9 @@ for the demonstration. `--no-project` avoids installing checkout dependencies.
 For an existing Python 3.12+ environment:
 
 ```sh
-python -m pip install geomapviz==2.0.1
+python -m pip install geomapviz==2.0.2
 # Add interactive maps and standalone HTML:
-python -m pip install 'geomapviz[interactive]==2.0.1'
+python -m pip install 'geomapviz[interactive]==2.0.2'
 ```
 
 The geographic data is in the separate examples, outside installed package
@@ -51,7 +51,7 @@ licences and provenance are committed under `examples/data/`.
 
 ## Documentation and project information
 
-- [Published 2.0.1 documentation](https://geomapviz.readthedocs.io/en/v2.0.1/)
+- [Published 2.0.2 documentation](https://geomapviz.readthedocs.io/en/v2.0.2/)
 - [Aggregation](docs/aggregation.md), [geography](docs/geography.md) and [plotting](docs/plotting.md) guides
 - [API and 1.x migration](docs/api.md)
 - [Release notes](docs/release-notes.md)

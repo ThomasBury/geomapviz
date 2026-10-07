@@ -1,5 +1,5 @@
 [project]
-site_name = "Geomapviz — 2.0.1 documentation"
+site_name = "Geomapviz — 2.0.2 documentation"
 site_url = "https://geomapviz.readthedocs.io/"
 site_description = "Prepare, compare and map geographic means and exposure-weighted rates."
 strict = true

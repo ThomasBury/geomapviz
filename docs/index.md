@@ -11,7 +11,7 @@ Download and extract the [geographic examples](downloads/geographic-examples.zip
 then run this working Belgian demonstration from the extracted directory:
 
 ```sh
-uv run --no-project --python 3.12 --with 'geomapviz==2.0.1' \
+uv run --no-project --python 3.12 --with 'geomapviz==2.0.2' \
   geographic_gallery.py --case belgium --output output
 ```
 
@@ -26,9 +26,9 @@ dependencies for the command above. `--no-project` avoids installing a surroundi
 checkout's dependencies. For an existing Python 3.12+ environment:
 
 ```sh
-python -m pip install geomapviz==2.0.1
+python -m pip install geomapviz==2.0.2
 # For interactive maps and standalone HTML:
-python -m pip install 'geomapviz[interactive]==2.0.1'
+python -m pip install 'geomapviz[interactive]==2.0.2'
 ```
 
 See the [Quickstart](quickstart.md#installation) for environment setup and platforms.

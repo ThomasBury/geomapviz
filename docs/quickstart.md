@@ -6,7 +6,7 @@ boundaries and simulated records. Download and extract the
 extracted directory:
 
 ```sh
-uv run --no-project --python 3.12 --with 'geomapviz==2.0.1' \
+uv run --no-project --python 3.12 --with 'geomapviz==2.0.2' \
   geographic_gallery.py --case belgium --output output
 ```
 
@@ -21,7 +21,7 @@ Create an environment and install the release from PyPI:
 
 ```sh
 python3.12 -m venv .venv
-.venv/bin/python -m pip install geomapviz==2.0.1
+.venv/bin/python -m pip install geomapviz==2.0.2
 ```
 
 On Windows, create the environment with `py -3.12 -m venv .venv` and use
@@ -30,16 +30,16 @@ The base installation supports aggregation, geography preparation and static map
 For interactive maps and standalone HTML export, install the extra in the same environment:
 
 ```sh
-.venv/bin/python -m pip install 'geomapviz[interactive]==2.0.1'
+.venv/bin/python -m pip install 'geomapviz[interactive]==2.0.2'
 ```
 
 With [uv](https://docs.astral.sh/uv/getting-started/installation/), the equivalent is:
 
 ```sh
 uv venv --python 3.12
-uv pip install geomapviz==2.0.1
+uv pip install geomapviz==2.0.2
 # Choose this instead for HTML export:
-uv pip install 'geomapviz[interactive]==2.0.1'
+uv pip install 'geomapviz[interactive]==2.0.2'
 ```
 
 For the previous API, install `geomapviz==1.1.3` and use the

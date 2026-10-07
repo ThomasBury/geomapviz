@@ -6,7 +6,7 @@ with the [Belgian rates tutorial](examples/rates.md).
 ## A complete synthetic comparison
 
 This is the same data and workflow as
-[the prepared-comparison example](https://github.com/ThomasBury/geomapviz/blob/v2.0.1/examples/prepared_comparison.py).
+[the prepared-comparison example](https://github.com/ThomasBury/geomapviz/blob/v2.0.2/examples/prepared_comparison.py).
 The four rectangles are invented boundaries, not an administrative map.
 `loss` contains observed amounts; both model columns contain predicted amounts
 per unit of exposure. Exposure measures the time or quantity at risk, such as
@@ -56,7 +56,7 @@ print(mapped.attrs["coverage"])
 Save the code as `arithmetic.py` and run:
 
 ```sh
-uv run --no-project --python 3.12 --with 'geomapviz==2.0.1' arithmetic.py
+uv run --no-project --python 3.12 --with 'geomapviz==2.0.2' arithmetic.py
 ```
 
 Open `comparison.png` in an image viewer and inspect the printed summary and

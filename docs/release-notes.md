@@ -1,5 +1,20 @@
 # Release notes
 
+## 2.0.2
+
+This performance patch reduces pooled plotting-scale work while preserving
+exact classification boundaries, duplicate observations and missing-value handling.
+Public APIs and dependencies are unchanged.
+
+- Difference classification skips the unused unique-value calculation and retains
+  symmetric odd-numbered bins centered on zero.
+- Ordinary quantities sort once to count distinct values and reuse that ordering
+  for normalized Fisher–Jenks classification.
+- Regression checks cover pooled duplicates, nullable values, constant and
+  all-missing groups, and bin-count boundaries.
+
+Fisher–Jenks still uses mapclassify's Python fallback when Numba is absent.
+
 ## 2.0.1
 
 This documentation patch restores the geographic teaching examples with the
