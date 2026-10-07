@@ -5,6 +5,8 @@ or actual-versus-predicted rates on their own geographic boundaries.
 
 ## TL;DR
 
+[Gallery](https://geomapviz.readthedocs.io/en/stable/examples/)
+
 - Calculate averages by area, with optional weights.
 - Group smaller areas into larger districts or regions using your area mapping.
 - Match results to your own map boundaries.
@@ -56,6 +58,81 @@ uv run --no-project --python 3.12 --with 'geomapviz==2.0.2' \
 Open `output/belgium_mean.png`. The [walkthrough](docs/examples/belgium.md)
 explains equal/weighted means, four related signals and classification.
 The script reads local snapshots; running needs no data downloads, tiles or server.
+
+### From a DataFrame to one value per area
+
+Here is a smaller teaching DataFrame using two IDs from the same Belgian
+boundary snapshot. These three simulated records make the arithmetic easy to
+follow; the map above uses the full demonstration dataset.
+
+```python
+import geopandas as gpd
+import pandas as pd
+
+from geomapviz import aggregate_means, assign_parent, prepare_geography
+
+records = pd.DataFrame({
+    "mun_id": ["11001", "11001", "11002"],
+    "simulated_signal": [10.0, 20.0, 30.0],
+    "exposure": [1.0, 3.0, 2.0],
+})
+boundaries = gpd.read_file("examples/data/belgium_municipalities_2024.zip")
+```
+
+`records` contains several rows per municipality:
+
+| mun_id | simulated_signal | exposure |
+| --- | ---: | ---: |
+| 11001 | 10.0 | 1.0 |
+| 11001 | 20.0 | 3.0 |
+| 11002 | 30.0 | 2.0 |
+
+```python
+summary = aggregate_means(records, "mun_id", ["simulated_signal"], weight="exposure")
+mapped = prepare_geography(summary, boundaries, "mun_id")
+```
+
+Geomapviz groups the records, calculates the weighted means and adds support
+columns automatically. The resulting `summary` is still a pandas DataFrame:
+
+| mun_id | simulated_signal | support_count | total_weight |
+| --- | ---: | ---: | ---: |
+| 11001 | 17.5 | 2 | 4.0 |
+| 11002 | 30.0 | 1 | 2.0 |
+
+For municipality `11001`, the mean is `(10 × 1 + 20 × 3) / (1 + 3) = 17.5`.
+`prepare_geography` validates the IDs and joins these results to the polygons,
+preserving the boundary coordinate system. Municipalities without records stay
+on the map with missing values. Pass `mapped` to `plot_geography` to render it.
+
+### Group smaller geographic IDs into larger areas
+
+The supplied boundaries map both `11001` (Aartselaar) and `11002` (Antwerpen)
+to arrondissement `11000`. Geomapviz uses that mapping to assign the parent ID
+to every original record and calculate a new weighted mean:
+
+```python
+parent_records = assign_parent(records, boundaries, "mun_id", "arr_id")
+parent_summary = aggregate_means(
+    parent_records, "arr_id", ["simulated_signal"], weight="exposure"
+)
+
+# GeoPandas merges all municipality polygons belonging to each arrondissement.
+parent_boundaries = boundaries[["arr_id", "geometry"]].dissolve(by="arr_id").reset_index()
+parent_mapped = prepare_geography(parent_summary, parent_boundaries, "arr_id")
+```
+
+The resulting `parent_summary`, rounded here to two decimals, is:
+
+| arr_id | simulated_signal | support_count | total_weight |
+| --- | ---: | ---: | ---: |
+| 11000 | 21.67 | 3 | 6.0 |
+
+Its mean is `(10 × 1 + 20 × 3 + 30 × 2) / (1 + 3 + 2) = 21.67`, rather than
+the unweighted average of the two municipality means, `23.75`. The polygons
+merge separately from the statistical calculation. Use `reg_id` instead of
+`arr_id` to group by region; the [scale walkthrough](docs/examples/aggregation.md)
+shows all three geographic levels for the full dataset.
 
 ## Installation
 
