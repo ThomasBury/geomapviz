@@ -1249,7 +1249,7 @@ Phase 3 owns the version/reference update, 2.0.1 release checks, publication and
 deployed gallery/download verification. No push, tag or publication was performed;
 the archived 1.1.3 and 2.0.0 documentation is untouched.
 
-## Geographic documentation restoration — phase 3: 2.0.1 candidate (2026-10-07)
+## Geographic documentation restoration — phase 3 complete: 2.0.1 (2026-10-07)
 
 Prepared the release from merged PR #6 at
 `d21ead2b82eeef8a7ba84a7e24f5ba73dd497c31`. Main CI passes:
@@ -1283,3 +1283,51 @@ Before publication, require reviewed final-head CI and merged-main CI, then tag
 that exact merged commit `v2.0.1`. The protected PyPI job, fresh published-package
 checks, GitHub release and versioned/stable documentation verification remain
 release gates; this candidate record does not claim publication.
+
+
+### Completed 2.0.1 release
+
+[Release PR #7](https://github.com/ThomasBury/geomapviz/pull/7) merged after all
+final-head checks and Codex/CodeRabbit reviews completed without findings.
+The annotated remote tag `v2.0.1` peels to merged commit
+`9837891387fafce5b435756b8eebb1f0383d33c0`.
+
+- Fresh candidate wheel/source installations pass in base and interactive modes
+  outside the checkout; both interactive installations pass all 70 tests.
+  Every case from the hosted ZIP runs with 2.0.1: 14 PNGs in each mode and 13
+  interactive HTML maps. Independent snapshot, arithmetic, original-record
+  parent aggregation and coverage checks pass against both modes' summaries.
+  Every generated PNG matches its hosted preview. The full interactive run hit
+  the execution limit during demographics; rerunning that final case separately
+  and checking all exports together completed verification.
+- Merged-main CI passes:
+  [RuffCov 37644121835](https://github.com/ThomasBury/geomapviz/actions/runs/37644121835)
+  and [Distributions 37644121795](https://github.com/ThomasBury/geomapviz/actions/runs/37644121795).
+  Tag CI passes:
+  [RuffCov 37644529310](https://github.com/ThomasBury/geomapviz/actions/runs/37644529310)
+  and [Distributions 37644529440](https://github.com/ThomasBury/geomapviz/actions/runs/37644529440),
+  including all four distribution checks and the approved protected PyPI job.
+- [PyPI 2.0.1](https://pypi.org/project/geomapviz/2.0.1/) is published. Both archive
+  hashes match the validated tag artifacts byte for byte. Fresh PyPI base and
+  interactive environments pass version/path, dependency, arithmetic, geography,
+  static export and optional interactive checks with `PYTHONPATH` removed.
+- [Versioned documentation build 34996377](https://app.readthedocs.org/projects/geomapviz/builds/34996377/)
+  and [stable build 34996376](https://app.readthedocs.org/projects/geomapviz/builds/34996376/)
+  pass for the tagged commit. All 30 checked versioned pages/assets return HTTP
+  200. Preview bytes, inline map data and the complete ZIP match the release
+  source; pages identify 2.0.1. All five versioned hosted maps and downloaded
+  copies pass hover, pan, zoom and reset, with no page errors; downloaded checks
+  are offline with HTTP(S) blocked. Desktop/mobile disclosures load maps only
+  when opened and fit their available widths.
+- The released ZIP's exact pinned `uv run --no-project` base Belgium and
+  interactive rates commands pass against PyPI 2.0.1, along with its independent
+  numerical checker. Their PNGs, CSVs and metadata match the checked all-case
+  runs. The documentation root redirects to stable at the release commit;
+  archived 1.1.3 and 2.0.0 versions remain separate.
+- The [GitHub release](https://github.com/ThomasBury/geomapviz/releases/tag/v2.0.1)
+  is published, neither draft nor prerelease, with versioned gallery and ZIP
+  links. Final evidence is under `/tmp/geomapviz-release-2.0.1/`.
+
+Phase 3 is complete. This completion record follows the published commit and
+changes no released artifact. Package APIs and dependency bounds are unchanged;
+existing mapclassify fallback warnings and the recorded platform limits remain.
