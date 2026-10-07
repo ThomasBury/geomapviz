@@ -64,6 +64,3 @@ Run the independent snapshot and numerical checks with:
 uv run --no-project --python 3.12 --with 'geomapviz==2.0.1' \
   check_geographic_gallery.py
 ```
-
-Until the documentation patch is published, maintainers can substitute
-`geomapviz==2.0.0` in these commands: the package APIs are unchanged.

@@ -1248,3 +1248,38 @@ This is the phase 2 review boundary. Version references remain at the published
 Phase 3 owns the version/reference update, 2.0.1 release checks, publication and
 deployed gallery/download verification. No push, tag or publication was performed;
 the archived 1.1.3 and 2.0.0 documentation is untouched.
+
+## Geographic documentation restoration — phase 3: 2.0.1 candidate (2026-10-07)
+
+Prepared the release from merged PR #6 at
+`d21ead2b82eeef8a7ba84a7e24f5ba73dd497c31`. Main CI passes:
+[RuffCov 37530076689](https://github.com/ThomasBury/geomapviz/actions/runs/37530076689)
+and [Distributions 37530076674](https://github.com/ThomasBury/geomapviz/actions/runs/37530076674),
+including all four wheel/source, base/interactive installation jobs.
+[Read the Docs build 34979388](https://app.readthedocs.org/projects/geomapviz/builds/34979388/)
+succeeds for the same commit.
+
+The hosted latest gallery, five tutorials, Quickstart, API and release notes
+return HTTP 200. All 14 PNGs match the checkout; the downloaded ZIP passes CRC,
+contains all 11 expected files and matches the committed runner, snapshots,
+provenance and licences. All five hosted interactive maps pass hover, pan, box
+zoom and reset. Their downloaded copies pass the same checks offline with
+HTTP(S) requests blocked and no page errors. Evidence is under
+`/tmp/geomapviz-release-2.0.1/`.
+
+Bumped the dynamic version to 2.0.1, updated current installation commands and
+versioned documentation/package metadata links, removed temporary forthcoming
+release wording and added brief release notes. Historical 2.0.0 notes, archived
+links and milestone evidence remain unchanged. Package behavior and dependency
+bounds are unchanged; geographic data remains outside both distributions.
+
+Local candidate checks pass: Ruff lint/format on `src tests examples`, ty 0.0.84,
+70 pytest tests, strict Zensical build, documentation integrity, `uv build`,
+`twine check --strict` and `git diff --check`. The existing 12 mapclassify fallback
+warnings remain. Fresh distribution and downloaded-gallery checks are recorded
+in the release PR when complete.
+
+Before publication, require reviewed final-head CI and merged-main CI, then tag
+that exact merged commit `v2.0.1`. The protected PyPI job, fresh published-package
+checks, GitHub release and versioned/stable documentation verification remain
+release gates; this candidate record does not claim publication.
