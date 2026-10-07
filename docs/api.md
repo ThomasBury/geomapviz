@@ -1,6 +1,6 @@
 # API and migration
 
-**Geomapviz 2.0.0 documentation.** Python 3.12+ is required.
+**Geomapviz 2.0.1 documentation.** Python 3.12+ is required.
 This reference is hand-authored;
 the [Quickstart](quickstart.md) provides a runnable comparison.
 

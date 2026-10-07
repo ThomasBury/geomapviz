@@ -83,16 +83,14 @@ from its directory. [uv](https://docs.astral.sh/uv/guides/scripts/) supplies Pyt
 and dependencies; `--no-project` avoids installing checkout dependencies.
 
 ```sh
-uv run --no-project --python 3.12 --with 'geomapviz==2.0.0' \
+uv run --no-project --python 3.12 --with 'geomapviz==2.0.1' \
   geographic_gallery.py --case demographics --output output
 
-uv run --no-project --python 3.12 --with 'geomapviz[interactive]==2.0.0' \
+uv run --no-project --python 3.12 --with 'geomapviz[interactive]==2.0.1' \
   geographic_gallery.py --case demographics --interactive --output output
 ```
 
 The first command exports PNGs, inspectable CSVs and metadata JSON; the second
 also exports standalone HTML. Data paths are relative to the script, so running
 needs no data downloads, map tiles or Python server. Full geometry makes HTML
-exports large and slower to generate. These commands use the currently published
-2.0.0 package; the bundle also documents the upcoming 2.0.1 documentation patch,
-which uses the same APIs.
+exports large and slower to generate.

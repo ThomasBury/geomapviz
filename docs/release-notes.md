@@ -1,5 +1,17 @@
 # Release notes
 
+## 2.0.1
+
+This documentation patch restores the geographic teaching examples with the
+v2 API. Package APIs and runtime dependencies are unchanged.
+
+- Added five illustrated walkthroughs covering Belgian means, administrative
+  aggregation and rate comparisons, Dutch postcodes and measured CBS population.
+- Added standalone interactive maps and a downloadable reproduction ZIP with
+  the runner, independent numerical checks, local data, provenance and licences.
+- Updated the Quickstart and installation commands for `geomapviz==2.0.1` and
+  `geomapviz[interactive]==2.0.1`. Geographic data stays outside package installs.
+
 ## 2.0.0
 
 Geomapviz now prepares inspectable geographic means and exposure-weighted
