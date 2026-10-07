@@ -16,7 +16,7 @@ import pytest  # noqa: E402
 from geopandas.testing import assert_geodataframe_equal  # noqa: E402
 
 from geomapviz import aggregate_means, aggregate_rates, prepare_geography  # noqa: E402
-from geomapviz.plot import PlotOptions, plot_geography  # noqa: E402
+from geomapviz.plot import PlotOptions, _scales, plot_geography  # noqa: E402
 
 
 def sample():
@@ -31,6 +31,73 @@ def sample():
 
 def map_axes(figure):
     return [axis for axis in figure.axes if axis.get_title()]
+
+
+@pytest.mark.parametrize(
+    "columns,n_bins,limits,bins",
+    [
+        ([[0, 0, 0, 1, 2, 3, None], [0, 0, 0, 4, 5, 6, None]], 1, (0, 6), [6]),
+        ([[0, 0, 0, 1, 2, 3, None], [0, 0, 0, 4, 5, 6, None]], 2, (0, 6), [2, 6]),
+        (
+            [[0, 0, 0, 1, 2, 3, None], [0, 0, 0, 4, 5, 6, None]],
+            3,
+            (0, 6),
+            [1, 4, 6],
+        ),
+        (
+            [[0, 0, 0, 0, 0, 0, 0, None], [0, 0, 1, 2, 10, 11, 12, None]],
+            3,
+            (0, 12),
+            [0, 2, 12],  # Deduplicating observations would give [2, 10, 12].
+        ),
+        (
+            [[0, 0, 0, 1, 2, 3, None], [0, 0, 0, 4, 5, 6, None]],
+            7,
+            (0, 6),
+            [0, 1, 2, 3, 4, 5, 6],
+        ),
+        (
+            [[0, 0, 0, 1, 2, 3, None], [0, 0, 0, 4, 5, 6, None]],
+            8,
+            (0, 6),
+            [0, 1, 2, 3, 4, 5, 6],
+        ),
+        ([[5, None], [5, None]], 8, (4.5, 5.5), [5]),
+        ([[0, None], [0, None]], 8, (-0.5, 0.5), [0]),
+        ([[None, None], [None, None]], 8, (0, 1), None),
+    ],
+)
+def test_pooled_scales_preserve_exact_boundaries(columns, n_bins, limits, bins):
+    mapped = pd.DataFrame(dict(zip(["a", "b"], columns)), dtype="Float64")
+    scales = _scales(mapped, ["a", "b"], {}, PlotOptions(autobin=True, n_bins=n_bins))
+    for vmin, vmax, actual_bins in scales.values():
+        assert (vmin, vmax) == limits
+        if bins is None:
+            assert actual_bins is None
+        else:
+            np.testing.assert_array_equal(actual_bins, bins)
+    assert scales["a"][2] is scales["b"][2]
+
+
+@pytest.mark.parametrize("n_bins,expected_count", [(1, 1), (2, 1), (3, 3), (4, 3)])
+def test_difference_scales_do_not_compute_unique_values(
+    monkeypatch, n_bins, expected_count
+):
+    mapped = pd.DataFrame({"a": [-4, 0, None], "b": [2, 2, None]}, dtype="Float64")
+
+    def unexpected_unique(*args, **kwargs):
+        pytest.fail("Difference classification must not call np.unique")
+
+    monkeypatch.setattr(np, "unique", unexpected_unique)
+    scales = _scales(
+        mapped,
+        ["a", "b"],
+        {"a": "difference", "b": "difference"},
+        PlotOptions(autobin=True, n_bins=n_bins),
+    )
+    for vmin, vmax, bins in scales.values():
+        assert (vmin, vmax) == (-4, 4)
+        np.testing.assert_array_equal(bins, np.linspace(-4, 4, expected_count + 1)[1:])
 
 
 @pytest.mark.parametrize("ncols,facecolor", [(1, "white"), (2, "#2b303b")])
