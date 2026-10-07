@@ -8,10 +8,10 @@ After installing [uv](https://docs.astral.sh/uv/getting-started/installation/),
 uv supplies Python 3.12 and the requested package dependencies automatically:
 
 ```sh
-uv run --no-project --python 3.12 --with 'geomapviz==2.0.1' \
+uv run --no-project --python 3.12 --with 'geomapviz==2.0.2' \
   geographic_gallery.py --case belgium --output output
 
-uv run --no-project --python 3.12 --with 'geomapviz[interactive]==2.0.1' \
+uv run --no-project --python 3.12 --with 'geomapviz[interactive]==2.0.2' \
   geographic_gallery.py --case rates --interactive --output output
 ```
 
@@ -61,6 +61,6 @@ than the PNGs.
 Run the independent snapshot and numerical checks with:
 
 ```sh
-uv run --no-project --python 3.12 --with 'geomapviz==2.0.1' \
+uv run --no-project --python 3.12 --with 'geomapviz==2.0.2' \
   check_geographic_gallery.py
 ```

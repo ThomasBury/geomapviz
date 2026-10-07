@@ -1,7 +1,7 @@
 """Real boundaries, simulated signals and published CBS population counts.
 
 Run every static example (data paths are relative to this script):
-    uv run --no-project --python 3.12 --with 'geomapviz==2.0.1' \
+    uv run --no-project --python 3.12 --with 'geomapviz==2.0.2' \
         geographic_gallery.py --output output
 Add --interactive with geomapviz[interactive] for standalone, offline HTML.
 """

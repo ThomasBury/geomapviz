@@ -31,10 +31,10 @@ vintages and field mappings; `data/manifest.json` records exact checksums.
 Extract the ZIP, open a terminal in its directory, and run:
 
 ```sh
-uv run --no-project --python 3.12 --with 'geomapviz==2.0.1' \
+uv run --no-project --python 3.12 --with 'geomapviz==2.0.2' \
   geographic_gallery.py --output output
 
-uv run --no-project --python 3.12 --with 'geomapviz[interactive]==2.0.1' \
+uv run --no-project --python 3.12 --with 'geomapviz[interactive]==2.0.2' \
   geographic_gallery.py --case all --interactive --output output
 ```
 
@@ -63,7 +63,7 @@ weights. Statistical support counts and exposure do not estimate uncertainty.
 ## Numerical checks
 
 ```sh
-uv run --no-project --python 3.12 --with 'geomapviz==2.0.1' \
+uv run --no-project --python 3.12 --with 'geomapviz==2.0.2' \
   check_geographic_gallery.py --exports output
 ```
 

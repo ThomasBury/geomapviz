@@ -92,19 +92,21 @@ def _scales(mapped, metrics, quantities, options):
                 raise ValueError(f"Values in {columns} exceed a finite plotting scale")
         bins = None
         if options.autobin and finite.size:
-            k = min(options.n_bins, np.unique(finite).size)
             if quantity == "difference":
                 k = options.n_bins - (options.n_bins % 2 == 0)
                 bins = np.linspace(vmin, vmax, k + 1)[1:]
             else:
                 from mapclassify import FisherJenks
 
+                ordered = np.sort(finite)
+                k = min(
+                    options.n_bins, 1 + np.count_nonzero(ordered[1:] != ordered[:-1])
+                )
                 if k == 1:
                     bins = np.array([finite.max()])
                 else:
                     # Fisher-Jenks variance loses precision on tightly spaced
                     # values. Classify on [0, 1], then take original data edges.
-                    ordered = np.sort(finite)
                     scaled = (ordered - ordered[0]) / (ordered[-1] - ordered[0])
                     bins = ordered[
                         np.searchsorted(scaled, FisherJenks(scaled, k=k).bins)

@@ -68,7 +68,7 @@ native Matplotlib for its small comparison scatterplot.
 
 ## Standalone HTML export
 
-Install `geomapviz[interactive]==2.0.1`. Interaction returns a HoloViews layout
+Install `geomapviz[interactive]==2.0.2`. Interaction returns a HoloViews layout
 of GeoViews polygons. `holoviews.save(..., backend="bokeh", resources="inline")`
 exports plot resources for use without a Python server or tile service.
 The canonical helper retains already projected polygon data/options as native
